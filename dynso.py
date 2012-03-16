@@ -11,8 +11,8 @@ usage: python dynso.py
     * left_volume *= left_moves_coef
     * right_volum *= right_moves_coef
 
-once this is ok, to it with 4 chanel, cut image NW, NE, SW, SE
-find 5.1 ALSA bindings ? a way to tune separatly 4 audio channel ?
+once this is ok, do it with 4 chanels, cut image NW, NE, SW, SE
+find 5.1 ALSA bindings ? a way to tune separatly 4 audio channels ?
 
 sudo apt-get install python-opencv python-alsaaudio
 
@@ -45,12 +45,10 @@ DynamicSound.weight = {
 
 """
 
-import os
 import wx
 import sys
-import time
 import cv2.cv as cv
-import alsaaudio
+import pygame
 
 class DynamicSound(object):
     weight = {
@@ -64,17 +62,24 @@ class DynamicSound(object):
         }
     }
     def __init__(self):
-        self._image = None # IPL Image
-        self._mixer = alsaaudio.Mixer() # 'Master', 0
-        self._volume = self._mixer.getvolume()
+        pygame.mixer.init(channels=2)
+        self._sound = None
+        self._channel = None
         # CV / V4L Camera ID
         self._capture = cv.CaptureFromCAM(-1)
     def __del__(self):
         # close stuff ?
-        self._mixer.close()
+        pygame.mixer.quit()
 
-    def setvolume(self, volume, channel=alsaaudio.MIXER_CHANNEL_ALL):
-        self._mixer.setvolume(volume, channel)
+    def setvolume(self, volume, right=None):
+        if right:
+            self._channel.set_volume(volume, right)
+        else:
+            self._channel.set_volume(volume)
+
+    def play(self, path):
+        self._sound = pygame.mixer.Sound(path)
+        self._channel = self._sound.play()
 
     def capture(self):
         img = cv.QueryFrame(self._capture)
@@ -93,6 +98,7 @@ class DynamicSound(object):
             cv.CalcOpticalFlowLK(imgprev, imgcurr, winsize, velx, vely)
             cv.ShowImage("x", velx)
             cv.ShowImage("y", vely)
+            # TODO add x+y / 4 sum %
             key = cv.WaitKey(10) & 255
             # If ESC key pressed Key=0x1B, Key=0x10001B under OpenCV linux
             if key == wx.WXK_ESCAPE:
@@ -105,9 +111,10 @@ def main(args):
         sys.stderr.write(__doc__)
         return 1
 
+    p = "/media/data/media/music/Yoshimi Battles the Pink Robots [5.1]/06 Ego Tripping at the Gates of Hell.ogg"
     dynso = DynamicSound()
     print("get ready! ( WIP :)")
-    dynso.setvolume(10)
+    dynso.play(p)
     dynso.capture()
 
     return 0
