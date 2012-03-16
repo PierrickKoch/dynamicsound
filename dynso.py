@@ -70,8 +70,6 @@ class DynamicSound(object):
     def __init__(self):
         self._sound = None
         self._channel = None
-        self._fifo_left = [0.0] * 10
-        self._fifo_right = [0.0] * 10
         # CV / V4L Camera ID
         self._capture = cv.CaptureFromCAM(-1)
         pygame.mixer.init(channels=2)
@@ -96,7 +94,7 @@ class DynamicSound(object):
         cv.CvtColor(img, imgcurr, cv.CV_RGB2GRAY)
         velx = cv.CreateImage(imgsize, cv.IPL_DEPTH_32F, 1)
         vely = cv.CreateImage(imgsize, cv.IPL_DEPTH_32F, 1)
-        winsize = (7, 7)
+        winsize = (3, 3)
         cv.WaitKey(10)
         while 1:
             imgprev = imgcurr
@@ -104,57 +102,58 @@ class DynamicSound(object):
             imgcurr = cv.CreateImage(imgsize, cv.IPL_DEPTH_8U, 1)
             cv.CvtColor(img, imgcurr, cv.CV_RGB2GRAY)
             cv.CalcOpticalFlowLK(imgprev, imgcurr, winsize, velx, vely)
-            #cv.ShowImage("x", velx)
-            #cv.ShowImage("y", vely)
             # x*y / 2 sum -> %
             self.flow_to_weight(velx, vely)
-            self.weighted_volume()
             key = cv.WaitKey(10) & 255
             # If ESC key pressed Key=0x1B, Key=0x10001B under OpenCV linux
             if key == wx.WXK_ESCAPE:
                 break
 
-    def flow_to_weight(self, velx, vely):
-        image = cv.CreateImage((velx.width, velx.height), velx.depth, velx.channels)
-        cv.Mul(velx, vely, image)
-        #cv.ShowImage("velx*vely", image)
-        mid = image.width // 2
-        # left ROI
-        cv.SetImageROI(image, (0, 0, mid, image.height))
-        sumleft = cv.Sum(image)
-        cv.ShowImage("left", image)
-        # right ROI
-        cv.SetImageROI(image, (mid, 0, image.width, image.height))
-        sumright = cv.Sum(image)
-        cv.ShowImage("right", image)
-        # abs
-        sumleft = sumleft[0] if sumleft[0] > 0 else -sumleft[0]
-        sumright = sumright[0] if sumright[0] > 0 else -sumright[0]
-        # TODO FIFO to normalize
-        self._fifo_left.pop()
-        self._fifo_left.insert(0, sumleft)
-        sumleft = sum(self._fifo_left)
-        self._fifo_right.pop()
-        self._fifo_right.insert(0, sumright)
-        sumright = sum(self._fifo_right)
+    def flow_xy_to_image(self, velx, vely):
+        imgsize = (velx.width, velx.height)
+        velx8u = cv.CreateImage(imgsize, cv.IPL_DEPTH_8U, 1)
+        vely8u = cv.CreateImage(imgsize, cv.IPL_DEPTH_8U, 1)
+        cv.ConvertScaleAbs(velx, velx8u)
+        cv.ConvertScaleAbs(vely, vely8u)
+        image = cv.CreateImage(imgsize, cv.IPL_DEPTH_8U, 1)
+        cv.AddWeighted(velx8u, 0.5, vely8u, 0.5, 0, image)
+        cv.Flip(image, flipMode=1) # for webcam
+        return image
+
+    def sum_to_weight(self, sumleft, sumright):
         # max -> 1.0
         if sumleft == sumright:
             self.weight['up']['left'] = 1.0
             self.weight['up']['right'] = 1.0
         elif sumleft > sumright:
+            tmp = 1.0/(sumleft-sumright)
             self.weight['up']['left'] = 1.0
-            self.weight['up']['right'] = 1.0/(sumleft-sumright)
+            self.weight['up']['right'] = tmp if tmp > 0.1 else 0.1
         else:
-            self.weight['up']['left'] = 1.0/(sumright-sumleft)
+            tmp = 1.0/(sumright-sumleft)
+            self.weight['up']['left'] = tmp if tmp > 0.1 else 0.1
             self.weight['up']['right'] = 1.0
+
+    def flow_to_weight(self, velx, vely):
+        image = self.flow_xy_to_image(velx, vely)
+        midx = image.width // 2
+        # TODO midy = image.height // 2
+        # left ROI
+        cv.SetImageROI(image, (0, 0, midx, image.height))
+        sumleft = cv.Sum(image)
+        cv.ShowImage("left", image)
+        # right ROI
+        cv.SetImageROI(image, (midx, 0, image.width, image.height))
+        sumright = cv.Sum(image)
+        cv.ShowImage("right", image)
+        self.sum_to_weight(sumleft[0], sumright[0])
         print(self.weight['up'])
+        self.weighted_volume()
 
     def weighted_volume(self):
         self.setvolume(self.weight['up']['left'], self.weight['up']['right'])
 
 def main(args):
-    import this # The Zen of Python, by Tim Peters
-
     if "-h" in args:
         sys.stderr.write(__doc__)
         return 1
