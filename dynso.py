@@ -106,7 +106,7 @@ class DynamicSound(object):
             cv.CvtColor(img, imgcurr, cv.CV_RGB2GRAY)
             cv.CalcOpticalFlowLK(imgprev, imgcurr, winsize, velx, vely)
             # x*y / 2 sum -> %
-            self.flow_to_weight(velx, vely)
+            self.flow_to_volume(velx, vely)
             key = cv.WaitKey(10) & 255
             # If ESC key pressed Key=0x1B, Key=0x10001B under OpenCV linux
             if key == wx.WXK_ESCAPE:
@@ -123,8 +123,8 @@ class DynamicSound(object):
         cv.Flip(image, flipMode=1) # for webcam
         return image
 
-    def sum_to_weight(self, sum_up_left, sum_up_right, sum_down_left, sum_down_right):
-        highest = max(sum_up_left, sum_up_right, sum_down_left, sum_down_right)
+    def sum_to_weight(self, up_left, up_right, down_left, down_right):
+        highest = max(up_left, up_right, down_left, down_right)
         # max -> 1.0
         def get_volume(value):
             if highest > 1:
@@ -132,13 +132,12 @@ class DynamicSound(object):
                 return round(tmp, 4) if tmp > 0.1 else 0.1
             else:
                 return 1.0
-        self.weight['up']['left'] = get_volume(sum_up_left)
-        self.weight['up']['right'] = get_volume(sum_up_right)
-        self.weight['down']['left'] = get_volume(sum_down_left)
-        self.weight['down']['right'] = get_volume(sum_down_right)
+        self.weight['up']['left'] = get_volume(up_left)
+        self.weight['up']['right'] = get_volume(up_right)
+        self.weight['down']['left'] = get_volume(down_left)
+        self.weight['down']['right'] = get_volume(down_right)
 
-    def flow_to_weight(self, velx, vely):
-        image = self.flow_xy_to_image(velx, vely)
+    def image_to_weight(self, image):
         midx = image.width // 2
         midy = image.height // 2
         # up left ROI
@@ -159,7 +158,6 @@ class DynamicSound(object):
         cv.ShowImage("down right", image)
         self.sum_to_weight(sum_up_left[0], sum_up_right[0], 
                            sum_down_left[0], sum_down_right[0])
-        self.weighted_volume()
 
     def weighted_volume(self):
         vleft = self.weight['up']['left'] + self.weight['down']['left']
@@ -168,6 +166,11 @@ class DynamicSound(object):
         vleft = round(vleft/highest, 2)
         vright = round(vright/highest, 2)
         self.setvolume(vleft, vright)
+
+    def flow_to_volume(self, velx, vely):
+        image = self.flow_xy_to_image(velx, vely)
+        self.image_to_weight(image)
+        self.weighted_volume()
 
 def main(args):
     if "-h" in args:
