@@ -125,7 +125,10 @@ class DynamicSound(object):
         sumleft = sumleft[0] if sumleft[0] > 0 else -sumleft[0]
         sumright = sumright[0] if sumright[0] > 0 else -sumright[0]
         # max -> 1.0
-        if sumleft > sumright:
+        if sumleft == sumright:
+            self.weight['up']['left'] = 1.0
+            self.weight['up']['right'] = 1.0
+        elif sumleft > sumright:
             self.weight['up']['left'] = 1.0
             self.weight['up']['right'] = 1.0/(sumleft-sumright)
         else:
@@ -139,14 +142,16 @@ class DynamicSound(object):
 def main(args):
     import this # The Zen of Python, by Tim Peters
 
-    if "h" in ''.join(args):
+    if "-h" in args:
         sys.stderr.write(__doc__)
         return 1
 
-    p = "/media/data/media/music/Yoshimi Battles the Pink Robots [5.1]/06 Ego Tripping at the Gates of Hell.ogg"
+    path = "/media/data/media/music/Yoshimi Battles the Pink Robots [5.1]/06 Ego Tripping at the Gates of Hell.ogg"
+    if len(args) > 1:
+        path = args[1]
     dynso = DynamicSound()
-    print("get ready! ( WIP :)")
-    dynso.play(p)
+    print("get ready!")
+    dynso.play(path)
     print("opencv is magic!")
     dynso.capture()
 
