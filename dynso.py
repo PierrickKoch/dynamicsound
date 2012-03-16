@@ -13,7 +13,7 @@ http://creativecommons.org/licenses/by/2.0/
     * left_volume *= left_moves_coef
     * right_volum *= right_moves_coef
 
-once this is ok, do it with 4 chanels, cut image NW, NE, SW, SE
+once this is ok, do it with 4 channels, cut image NW, NE, SW, SE
 find 5.1 ALSA bindings ? a way to tune separatly 4 audio channels ?
 see: ossaudiodev.openmixer ? ncurses
 
@@ -21,15 +21,11 @@ sudo apt-get install python-opencv python-pygame
 
   * http://opencv.willowgarage.com/documentation/python/reading_and_writing_images_and_video.html#capturefromcam
   * http://opencv.willowgarage.com/documentation/python/reading_and_writing_images_and_video.html#queryframe
-  * http://opencv.willowgarage.com/documentation/python/basic_structures.html#iplimage
   * http://opencv.willowgarage.com/documentation/python/video_motion_analysis_and_object_tracking.html#calcopticalflowlk
   * http://pygame.org/docs/ref/mixer.html#Channel.set_volume
   * libsdl ? ossaudiodev.openmixer ? ncurses
-  * http://opencv.willowgarage.com/documentation/python/user_interface.html#namedwindow
-  * http://opencv.willowgarage.com/documentation/python/user_interface.html#waitkey
   * https://www.google.com/search?q=usb+5.1&tbm=shop
   * http://en.store.creative.com/sound-blaster/sound-blaster-x-fi-surround-5-1-pro/1-20055.aspx
-  * http://en.wikipedia.org/wiki/MP3_Surround
   * http://en.wikipedia.org/wiki/Surround_sound
   * http://wiki.python.org/moin/PythonInMusic
 
@@ -49,8 +45,16 @@ DynamicSound.weight = {
 
 import wx
 import sys
-import cv2.cv as cv
-import pygame
+try:
+    import cv2.cv as cv
+except ImportError:
+    print("install opencv: sudo apt-get install python-opencv")
+    sys.exit(1)
+try:
+    import pygame
+except ImportError:
+    print("install pygame: sudo apt-get install python-pygame")
+    sys.exit(1)
 
 class DynamicSound(object):
     weight = {
@@ -66,8 +70,8 @@ class DynamicSound(object):
     def __init__(self):
         self._sound = None
         self._channel = None
-        self._fifo_left = [0.0] * 50
-        self._fifo_right = [0.0] * 50
+        self._fifo_left = [0.0] * 10
+        self._fifo_right = [0.0] * 10
         # CV / V4L Camera ID
         self._capture = cv.CaptureFromCAM(-1)
         pygame.mixer.init(channels=2)
