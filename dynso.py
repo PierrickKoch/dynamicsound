@@ -19,19 +19,19 @@ sudo apt-get install python-opencv python-alsaaudio
   * http://opencv.willowgarage.com/documentation/python/reading_and_writing_images_and_video.html#capturefromcam
   * http://opencv.willowgarage.com/documentation/python/reading_and_writing_images_and_video.html#queryframe
   * http://opencv.willowgarage.com/documentation/python/basic_structures.html#iplimage
+  * http://opencv.willowgarage.com/documentation/python/video_motion_analysis_and_object_tracking.html#calcopticalflowlk
   * http://pyalsaaudio.sourceforge.net/libalsaaudio.html#alsaaudio.Mixer.setvolume
   * http://pygame.org/docs/ref/mixer.html#Channel.set_volume
   * libsdl ? ossaudiodev.openmixer ? ncurses
   * http://opencv.willowgarage.com/documentation/python/user_interface.html#namedwindow
   * http://opencv.willowgarage.com/documentation/python/user_interface.html#waitkey
-  * http://wxpython.org/docs/api/wx.KeyEvent-class.html
   * https://www.google.com/search?q=usb+5.1&tbm=shop
   * http://en.store.creative.com/sound-blaster/sound-blaster-x-fi-surround-5-1-pro/1-20055.aspx
   * http://en.wikipedia.org/wiki/MP3_Surround
   * http://en.wikipedia.org/wiki/Surround_sound
   * http://wiki.python.org/moin/PythonInMusic
 
-API usage:
+API usage: 0.0 < weight < 1.0
 DynamicSound.weight = {
     "up": {
         "left": 0,
@@ -48,6 +48,7 @@ DynamicSound.weight = {
 import os
 import wx
 import sys
+import time
 import cv2.cv as cv
 import alsaaudio
 
@@ -76,13 +77,24 @@ class DynamicSound(object):
         self._mixer.setvolume(volume, channel)
 
     def capture(self):
-        cv.NamedWindow(__file__)
+        img = cv.QueryFrame(self._capture)
+        imgsize = (img.width, img.height)
+        imgcurr = cv.CreateImage(imgsize, cv.IPL_DEPTH_8U, 1)
+        cv.CvtColor(img, imgcurr, cv.CV_RGB2GRAY)
+        velx = cv.CreateImage(imgsize, cv.IPL_DEPTH_32F, 1)
+        vely = cv.CreateImage(imgsize, cv.IPL_DEPTH_32F, 1)
+        winsize = (5, 5)
+        cv.WaitKey(10)
         while 1:
+            imgprev = imgcurr
             img = cv.QueryFrame(self._capture)
-            mono = cv.CreateImage((img.width, img.height), cv.IPL_DEPTH_8U, 1)
-            cv.CvtColor(img, mono, cv.CV_RGB2GRAY)
-            cv.ShowImage(__file__, mono)
+            imgcurr = cv.CreateImage(imgsize, cv.IPL_DEPTH_8U, 1)
+            cv.CvtColor(img, imgcurr, cv.CV_RGB2GRAY)
+            cv.CalcOpticalFlowLK(imgprev, imgcurr, winsize, velx, vely)
+            cv.ShowImage("x", velx)
+            cv.ShowImage("y", vely)
             key = cv.WaitKey(10) & 255
+            # If ESC key pressed Key=0x1B, Key=0x10001B under OpenCV linux
             if key == wx.WXK_ESCAPE:
                 break
 
