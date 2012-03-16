@@ -78,6 +78,8 @@ class DynamicSound(object):
         pygame.mixer.quit()
 
     def setvolume(self, volume, right=None):
+        if not self._channel:
+            return # not playing
         if right:
             self._channel.set_volume(volume, right)
         else:
@@ -120,38 +122,50 @@ class DynamicSound(object):
         cv.Flip(image, flipMode=1) # for webcam
         return image
 
-    def sum_to_weight(self, sumleft, sumright):
+    def sum_to_weight(self, sum_up_left, sum_up_right, sum_down_left, sum_down_right):
+        highest = max(sum_up_left, sum_up_right, sum_down_left, sum_down_right)
         # max -> 1.0
-        if sumleft == sumright:
-            self.weight['up']['left'] = 1.0
-            self.weight['up']['right'] = 1.0
-        elif sumleft > sumright:
-            tmp = 1.0/(sumleft-sumright)
-            self.weight['up']['left'] = 1.0
-            self.weight['up']['right'] = tmp if tmp > 0.1 else 0.1
-        else:
-            tmp = 1.0/(sumright-sumleft)
-            self.weight['up']['left'] = tmp if tmp > 0.1 else 0.1
-            self.weight['up']['right'] = 1.0
+        def get_volume(value):
+            sub = highest - value
+            if sub > 1:
+                tmp = 1.0 / sub
+                return tmp if tmp > 0.1 else 0.1
+            else:
+                return 1.0
+        self.weight['up']['left'] = get_volume(sum_up_left)
+        self.weight['up']['right'] = get_volume(sum_up_right)
+        self.weight['down']['left'] = get_volume(sum_down_left)
+        self.weight['down']['right'] = get_volume(sum_down_right)
 
     def flow_to_weight(self, velx, vely):
         image = self.flow_xy_to_image(velx, vely)
         midx = image.width // 2
-        # TODO midy = image.height // 2
-        # left ROI
-        cv.SetImageROI(image, (0, 0, midx, image.height))
-        sumleft = cv.Sum(image)
-        cv.ShowImage("left", image)
-        # right ROI
-        cv.SetImageROI(image, (midx, 0, image.width, image.height))
-        sumright = cv.Sum(image)
-        cv.ShowImage("right", image)
-        self.sum_to_weight(sumleft[0], sumright[0])
-        print(self.weight['up'])
+        midy = image.height // 2
+        # up left ROI
+        cv.SetImageROI(image, (0, 0, midx, midy))
+        sum_up_left = cv.Sum(image)
+        cv.ShowImage("up left", image)
+        # up right ROI
+        cv.SetImageROI(image, (midx, 0, image.width, midy))
+        sum_up_right = cv.Sum(image)
+        cv.ShowImage("up right", image)
+        # down left ROI
+        cv.SetImageROI(image, (0, midy, midx, image.height))
+        sum_down_left = cv.Sum(image)
+        cv.ShowImage("down left", image)
+        # down right ROI
+        cv.SetImageROI(image, (midx, midy, image.width, image.height))
+        sum_down_right = cv.Sum(image)
+        cv.ShowImage("down right", image)
+        self.sum_to_weight(sum_up_left[0], sum_up_right[0], 
+                           sum_down_left[0], sum_down_right[0])
         self.weighted_volume()
 
     def weighted_volume(self):
-        self.setvolume(self.weight['up']['left'], self.weight['up']['right'])
+        vleft = self.weight['up']['left'] + self.weight['down']['left']
+        vright = self.weight['up']['right'] + self.weight['down']['right']
+        print(vleft, vright) # TODO TMP 0.0 < volume < 1.0
+        self.setvolume(vleft, vright)
 
 def main(args):
     if "-h" in args:
