@@ -17,15 +17,19 @@ find 5.1 ALSA bindings ? a way to tune separatly 4 audio channel ?
 sudo apt-get install python-opencv python-alsaaudio
 
   * http://opencv.willowgarage.com/documentation/python/reading_and_writing_images_and_video.html#capturefromcam
+  * http://opencv.willowgarage.com/documentation/python/reading_and_writing_images_and_video.html#queryframe
+  * http://opencv.willowgarage.com/documentation/python/basic_structures.html#iplimage
   * http://pyalsaaudio.sourceforge.net/libalsaaudio.html#alsaaudio.Mixer.setvolume
   * http://pygame.org/docs/ref/mixer.html#Channel.set_volume
-  * libsdl ?
+  * libsdl ? ossaudiodev.openmixer ? ncurses
   * http://opencv.willowgarage.com/documentation/python/user_interface.html#namedwindow
   * http://opencv.willowgarage.com/documentation/python/user_interface.html#waitkey
   * http://wxpython.org/docs/api/wx.KeyEvent-class.html
   * https://www.google.com/search?q=usb+5.1&tbm=shop
   * http://en.store.creative.com/sound-blaster/sound-blaster-x-fi-surround-5-1-pro/1-20055.aspx
   * http://en.wikipedia.org/wiki/MP3_Surround
+  * http://en.wikipedia.org/wiki/Surround_sound
+  * http://wiki.python.org/moin/PythonInMusic
 
 API usage:
 DynamicSound.weight = {
@@ -75,21 +79,15 @@ class DynamicSound(object):
         cv.NamedWindow(__file__)
         while 1:
             img = cv.QueryFrame(self._capture)
-            cv.ShowImage(__file__, img)
-            key = cv.WaitKey(10)
+            mono = cv.CreateImage((img.width, img.height), cv.IPL_DEPTH_8U, 1)
+            cv.CvtColor(img, mono, cv.CV_RGB2GRAY)
+            cv.ShowImage(__file__, mono)
+            key = cv.WaitKey(10) & 255
             if key == wx.WXK_ESCAPE:
-                """
-                unicode bug: returns 1048603
-                unichr(1048603) = u'\U0010001b'
-                chr(wx.WXK_ESCAPE) = chr(27) = '\x1b'
-                unichr doesn't help:
-                    unichr(27) = u'\x1b' ord(unichr(27)) = 27
-                ? see : http://qt-project.org/doc/qt-4.8/qt.html#Key-enum ?
-                """
                 break
 
 def main(args):
-    import this
+    import this # The Zen of Python, by Tim Peters
 
     if "h" in ''.join(args):
         sys.stderr.write(__doc__)
@@ -97,7 +95,7 @@ def main(args):
 
     dynso = DynamicSound()
     print("get ready! ( WIP :)")
-    dynso.setvolume(100)
+    dynso.setvolume(10)
     dynso.capture()
 
     return 0
