@@ -66,6 +66,8 @@ class DynamicSound(object):
     def __init__(self):
         self._sound = None
         self._channel = None
+        self._fifo_left = [0.0] * 50
+        self._fifo_right = [0.0] * 50
         # CV / V4L Camera ID
         self._capture = cv.CaptureFromCAM(-1)
         pygame.mixer.init(channels=2)
@@ -124,6 +126,13 @@ class DynamicSound(object):
         # abs
         sumleft = sumleft[0] if sumleft[0] > 0 else -sumleft[0]
         sumright = sumright[0] if sumright[0] > 0 else -sumright[0]
+        # TODO FIFO to normalize
+        self._fifo_left.pop()
+        self._fifo_left.insert(0, sumleft)
+        sumleft = sum(self._fifo_left)
+        self._fifo_right.pop()
+        self._fifo_right.insert(0, sumright)
+        sumright = sum(self._fifo_right)
         # max -> 1.0
         if sumleft == sumright:
             self.weight['up']['left'] = 1.0
