@@ -111,6 +111,13 @@ class DynamicSound(object):
         dst = cv.CreateImage((velx.width, velx.height), cv.IPL_DEPTH_32F, 1)
         cv.And(velx, vely, dst)
         cv.ShowImage("and", dst)
+    def div_image_vertically(self, img):
+        mid = img.width // 2
+        imgsize = (mid, img.height)
+        left = cv.CreateImage(imgsize, img.depth, img.channels)
+        right = cv.CreateImage(imgsize, img.depth, img.channels)
+        # TODO
+        return (left, right)
 
 def main(args):
     import this # The Zen of Python, by Tim Peters
