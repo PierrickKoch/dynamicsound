@@ -46,7 +46,7 @@ DynamicSound.weight = {
 import wx
 import sys
 try:
-    import cv2.cv as cv
+    import cv
 except ImportError:
     print("install opencv: sudo apt-get install python-opencv")
     sys.exit(1)
