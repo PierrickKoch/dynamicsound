@@ -64,11 +64,11 @@ class DynamicSound(object):
         }
     }
     def __init__(self):
-        pygame.mixer.init(channels=2)
         self._sound = None
         self._channel = None
         # CV / V4L Camera ID
         self._capture = cv.CaptureFromCAM(-1)
+        pygame.mixer.init(channels=2)
     def __del__(self):
         # close stuff ?
         pygame.mixer.quit()
@@ -98,26 +98,43 @@ class DynamicSound(object):
             imgcurr = cv.CreateImage(imgsize, cv.IPL_DEPTH_8U, 1)
             cv.CvtColor(img, imgcurr, cv.CV_RGB2GRAY)
             cv.CalcOpticalFlowLK(imgprev, imgcurr, winsize, velx, vely)
-            cv.ShowImage("x", velx)
-            cv.ShowImage("y", vely)
-            # TODO add x+y / 4 sum %
+            #cv.ShowImage("x", velx)
+            #cv.ShowImage("y", vely)
+            # x*y / 2 sum -> %
             self.flow_to_weight(velx, vely)
+            self.weighted_volume()
             key = cv.WaitKey(10) & 255
             # If ESC key pressed Key=0x1B, Key=0x10001B under OpenCV linux
             if key == wx.WXK_ESCAPE:
                 break
 
     def flow_to_weight(self, velx, vely):
-        dst = cv.CreateImage((velx.width, velx.height), cv.IPL_DEPTH_32F, 1)
-        cv.And(velx, vely, dst)
-        cv.ShowImage("and", dst)
-    def div_image_vertically(self, img):
-        mid = img.width // 2
-        imgsize = (mid, img.height)
-        left = cv.CreateImage(imgsize, img.depth, img.channels)
-        right = cv.CreateImage(imgsize, img.depth, img.channels)
-        # TODO
-        return (left, right)
+        image = cv.CreateImage((velx.width, velx.height), velx.depth, velx.channels)
+        cv.Mul(velx, vely, image)
+        #cv.ShowImage("velx*vely", image)
+        mid = image.width // 2
+        # left ROI
+        cv.SetImageROI(image, (0, 0, mid, image.height))
+        sumleft = cv.Sum(image)
+        cv.ShowImage("left", image)
+        # right ROI
+        cv.SetImageROI(image, (mid, 0, image.width, image.height))
+        sumright = cv.Sum(image)
+        cv.ShowImage("right", image)
+        # abs
+        sumleft = sumleft[0] if sumleft[0] > 0 else -sumleft[0]
+        sumright = sumright[0] if sumright[0] > 0 else -sumright[0]
+        # max -> 1.0
+        if sumleft > sumright:
+            self.weight['up']['left'] = 1.0
+            self.weight['up']['right'] = 1.0/(sumleft-sumright)
+        else:
+            self.weight['up']['left'] = 1.0/(sumright-sumleft)
+            self.weight['up']['right'] = 1.0
+        print(self.weight['up'])
+
+    def weighted_volume(self):
+        self.setvolume(self.weight['up']['left'], self.weight['up']['right'])
 
 def main(args):
     import this # The Zen of Python, by Tim Peters
