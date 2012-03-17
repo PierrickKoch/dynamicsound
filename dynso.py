@@ -53,7 +53,6 @@ DynamicSound.weight = {
 
 """
 
-import wx
 import sys
 try:
     import cv
@@ -80,11 +79,10 @@ class DynamicSound(object):
     def __init__(self):
         self._sound = None
         self._channel = None
-        # CV / V4L Camera ID
         self._capture = cv.CaptureFromCAM(-1)
         pygame.mixer.init(channels=2) # max channels = 2 :/
     def __del__(self):
-        # close stuff
+        # close mixer
         pygame.mixer.quit()
 
     def setvolume(self, volume, right=None):
@@ -127,7 +125,7 @@ class DynamicSound(object):
             self.flow_to_volume(velx, vely)
             key = cv.WaitKey(10) & 255
             # If ESC key pressed Key=0x1B, Key=0x10001B under OpenCV linux
-            if key == wx.WXK_ESCAPE:
+            if key == 27: # aka ESCAPE
                 break
 
     def flow_xy_to_image(self, velx, vely):
