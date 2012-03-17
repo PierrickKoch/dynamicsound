@@ -3,7 +3,7 @@
 Dynamic Sound project
 usage: python dynso.py
 
-http://creativecommons.org/licenses/by/2.0/
+http://opensource.org/licenses/BSD-3-Clause
 
   1. init:
     * capturefromcam
@@ -135,16 +135,16 @@ class DynamicSound(object):
     def sum_to_weight(self, up_left, up_right, down_left, down_right):
         highest = max(up_left, up_right, down_left, down_right)
         # max -> 1.0
-        def get_volume(value):
+        def get_weight(value):
             if highest > 1:
                 tmp = value / highest
                 return round(tmp, 4) if tmp > 0.1 else 0.1
             else:
                 return 1.0
-        self.weight['up']['left'] = get_volume(up_left)
-        self.weight['up']['right'] = get_volume(up_right)
-        self.weight['down']['left'] = get_volume(down_left)
-        self.weight['down']['right'] = get_volume(down_right)
+        self.weight['up']['left'] = get_weight(up_left)
+        self.weight['up']['right'] = get_weight(up_right)
+        self.weight['down']['left'] = get_weight(down_left)
+        self.weight['down']['right'] = get_weight(down_right)
 
     def image_to_weight(self, image):
         midx = image.width // 2
