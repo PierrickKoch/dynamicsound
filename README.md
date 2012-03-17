@@ -10,7 +10,7 @@ Dynamic Sound
     * weight each 4 quart of the frame (0.0 < weight < 1.0)
     * apply weight as channel volume (see 5.1)
 
-[![youtube](https://i2.ytimg.com/vi/URmMm2icbHQ/sddefault.jpg "youtube")](http://youtube.com/embed/URmMm2icbHQ?rel=0)
+[![youtube](https://i2.ytimg.com/vi/S1fjLfp3Gb8/sddefault.jpg "youtube")](http://youtube.com/embed/S1fjLfp3Gb8?rel=0)
 
 ### sudo apt-get install python-opencv python-pygame
 
@@ -32,6 +32,7 @@ _TODO_ test with usb 5.1 or hdmi digital output + hdmi surround hifi
   * http://usa.yamaha.com/products/audio-visual/av-receivers-amps/rx
   * http://hg.pygame.org/pygame/src/d1cbb8c9d94b/test/playwave.py#cl-181
   * http://hg.pygame.org/pygame/src/9c6aa550da25/doc/src/openal_constants.rst#cl-69
+  * https://bitbucket.org/pygame/pygame/issue/113
   * http://crystalspace3d.org "3D sounds" !
 
 ## API usage: `0.0` < `weight` < `1.0`
