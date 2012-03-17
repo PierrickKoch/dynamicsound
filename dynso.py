@@ -20,14 +20,23 @@ sudo apt-get install python-opencv python-pygame
   * http://opencv.willowgarage.com/documentation/python/reading_and_writing_images_and_video.html#queryframe
   * http://opencv.willowgarage.com/documentation/python/video_motion_analysis_and_object_tracking.html#calcopticalflowlk
   * http://pygame.org/docs/ref/mixer.html#Channel.set_volume
-  * https://www.google.com/search?q=usb+5.1&tbm=shop
-  * http://en.store.creative.com/sound-blaster/sound-blaster-x-fi-surround-5-1-pro/1-20055.aspx
   * http://en.wikipedia.org/wiki/Surround_sound
   * http://wiki.python.org/moin/PythonInMusic
   * libsdl ? ossaudiodev.openmixer ? ncurses
 
 TODO find 5.1 python volume mixer (found stereo, not surround)
 TODO test with usb 5.1 or hdmi digital output + hdmi surround hifi
+  * http://en.store.creative.com/sound-blaster/sound-blaster-x-fi-surround-5-1-pro/1-20055.aspx
+  * http://usa.yamaha.com/products/audio-visual/av-receivers-amps/rx
+
+    #-#-#
+    |   |
+    | O |
+    #---#
+
+http://hg.pygame.org/pygame/src/d1cbb8c9d94b/test/playwave.py#cl-181
+http://hg.pygame.org/pygame/src/9c6aa550da25/doc/src/openal_constants.rst#cl-69
+
 
 API usage: 0.0 < weight < 1.0
 DynamicSound.weight = {
