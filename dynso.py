@@ -135,8 +135,8 @@ class DynamicSound(object):
         vleft = self.weight['up']['left'] + self.weight['down']['left']
         vright = self.weight['up']['right'] + self.weight['down']['right']
         highest = max(vleft, vright)
-        vleft = round(vleft/highest, 2)
-        vright = round(vright/highest, 2)
+        vleft = round(vleft / highest, 2)
+        vright = round(vright / highest, 2)
         self.setvolume(vleft, vright)
 
     def flow_to_volume(self, velx, vely):

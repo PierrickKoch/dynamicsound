@@ -10,7 +10,7 @@ Dynamic Sound
     * weight each 4 quart of the frame (0.0 < weight < 1.0)
     * apply weight as channel volume (see 5.1)
 
-__DEMO__ http://www.youtube.com/watch?v=URmMm2icbHQ
+[![youtube](https://i2.ytimg.com/vi/URmMm2icbHQ/sddefault.jpg "youtube")](http://youtube.com/embed/URmMm2icbHQ?rel=0)
 
 ### sudo apt-get install python-opencv python-pygame
 
