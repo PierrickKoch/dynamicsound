@@ -21,6 +21,7 @@ Dynamic Sound
   * http://en.wikipedia.org/wiki/Surround_sound
   * http://wiki.python.org/moin/PythonInMusic
   * http://www.libsdl.org/projects/SDL_mixer/
+  * http://connect.creativelabs.com/openal
   * libsdl ? ossaudiodev.openmixer ? ncurses
 
 _TODO_ find 5.1 python volume mixer (found stereo, not surround)
@@ -31,6 +32,7 @@ _TODO_ test with usb 5.1 or hdmi digital output + hdmi surround hifi
   * http://usa.yamaha.com/products/audio-visual/av-receivers-amps/rx
   * http://hg.pygame.org/pygame/src/d1cbb8c9d94b/test/playwave.py#cl-181
   * http://hg.pygame.org/pygame/src/9c6aa550da25/doc/src/openal_constants.rst#cl-69
+  * http://crystalspace3d.org "3D sounds" !
 
 ## API usage: `0.0` < `weight` < `1.0`
 
