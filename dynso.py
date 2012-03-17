@@ -5,17 +5,14 @@ usage: python dynso.py
 
 http://creativecommons.org/licenses/by/2.0/
 
-1. take webcam image
-2. cut image in 2 (left / right)
-3. detect moves
-    * get a coef for left and one for right (%)
-4. set speakers volume 
-    * left_volume *= left_moves_coef
-    * right_volum *= right_moves_coef
-
-once this is ok, do it with 4 channels, cut image NW, NE, SW, SE
-find 5.1 ALSA bindings ? a way to tune separatly 4 audio channels ?
-see: ossaudiodev.openmixer ? ncurses
+  1. init:
+    * capturefromcam
+    * play music
+  2. while 1
+    * queryframe (from cam)
+    * calcopticalflowlk (or some other magic, ideally object reco/tracking)
+    * weight each 4 quart of the frame (0.0 < weight < 1.0)
+    * apply weight as channel volume (see 5.1)
 
 sudo apt-get install python-opencv python-pygame
 
@@ -23,11 +20,14 @@ sudo apt-get install python-opencv python-pygame
   * http://opencv.willowgarage.com/documentation/python/reading_and_writing_images_and_video.html#queryframe
   * http://opencv.willowgarage.com/documentation/python/video_motion_analysis_and_object_tracking.html#calcopticalflowlk
   * http://pygame.org/docs/ref/mixer.html#Channel.set_volume
-  * libsdl ? ossaudiodev.openmixer ? ncurses
   * https://www.google.com/search?q=usb+5.1&tbm=shop
   * http://en.store.creative.com/sound-blaster/sound-blaster-x-fi-surround-5-1-pro/1-20055.aspx
   * http://en.wikipedia.org/wiki/Surround_sound
   * http://wiki.python.org/moin/PythonInMusic
+  * libsdl ? ossaudiodev.openmixer ? ncurses
+
+TODO find 5.1 python volume mixer (found stereo, not surround)
+TODO test with usb 5.1 or hdmi digital output + hdmi surround hifi
 
 API usage: 0.0 < weight < 1.0
 DynamicSound.weight = {
@@ -74,7 +74,7 @@ class DynamicSound(object):
         self._capture = cv.CaptureFromCAM(-1)
         pygame.mixer.init(channels=2)
     def __del__(self):
-        # close stuff ?
+        # close stuff
         pygame.mixer.quit()
 
     def setvolume(self, volume, right=None):
@@ -98,6 +98,15 @@ class DynamicSound(object):
         velx = cv.CreateImage(imgsize, cv.IPL_DEPTH_32F, 1)
         vely = cv.CreateImage(imgsize, cv.IPL_DEPTH_32F, 1)
         winsize = (3, 3)
+        # init windows (for debug)
+        cv.NamedWindow("upleft")
+        cv.NamedWindow("upright")
+        cv.NamedWindow("downleft")
+        cv.NamedWindow("downright")
+        cv.MoveWindow("upleft", 0, 0)
+        cv.MoveWindow("upright", img.width//2, 0)
+        cv.MoveWindow("downleft", 0, img.height//2)
+        cv.MoveWindow("downright", img.width//2, img.height//2)
         cv.WaitKey(10)
         while 1:
             imgprev = imgcurr
@@ -105,7 +114,7 @@ class DynamicSound(object):
             imgcurr = cv.CreateImage(imgsize, cv.IPL_DEPTH_8U, 1)
             cv.CvtColor(img, imgcurr, cv.CV_RGB2GRAY)
             cv.CalcOpticalFlowLK(imgprev, imgcurr, winsize, velx, vely)
-            # x*y / 2 sum -> %
+            # x*y / 4 sum -> %
             self.flow_to_volume(velx, vely)
             key = cv.WaitKey(10) & 255
             # If ESC key pressed Key=0x1B, Key=0x10001B under OpenCV linux
@@ -143,23 +152,23 @@ class DynamicSound(object):
         # up left ROI
         cv.SetImageROI(image, (0, 0, midx, midy))
         sum_up_left = cv.Sum(image)
-        cv.ShowImage("up left", image)
+        cv.ShowImage("upleft", image)
         # up right ROI
         cv.SetImageROI(image, (midx, 0, image.width, midy))
         sum_up_right = cv.Sum(image)
-        cv.ShowImage("up right", image)
+        cv.ShowImage("upright", image)
         # down left ROI
         cv.SetImageROI(image, (0, midy, midx, image.height))
         sum_down_left = cv.Sum(image)
-        cv.ShowImage("down left", image)
+        cv.ShowImage("downleft", image)
         # down right ROI
         cv.SetImageROI(image, (midx, midy, image.width, image.height))
         sum_down_right = cv.Sum(image)
-        cv.ShowImage("down right", image)
+        cv.ShowImage("downright", image)
         self.sum_to_weight(sum_up_left[0], sum_up_right[0], 
                            sum_down_left[0], sum_down_right[0])
 
-    def weighted_volume(self):
+    def weight_to_volume(self):
         vleft = self.weight['up']['left'] + self.weight['down']['left']
         vright = self.weight['up']['right'] + self.weight['down']['right']
         highest = max(vleft, vright)
@@ -170,7 +179,7 @@ class DynamicSound(object):
     def flow_to_volume(self, velx, vely):
         image = self.flow_xy_to_image(velx, vely)
         self.image_to_weight(image)
-        self.weighted_volume()
+        self.weight_to_volume()
 
 def main(args):
     if "-h" in args:
