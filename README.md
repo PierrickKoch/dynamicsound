@@ -1,16 +1,16 @@
 Dynamic Sound
 =============
 
-  1. init:
+  1. `init`
     * capture from cam
     * play sound (music)
-  2. while 1
+  2. `while 1`
     * query frame (from cam)
     * calc optical flow lk (or some other magic, ideally object reco/tracking)
     * weight each 4 quart of the frame (0.0 < weight < 1.0)
     * apply weight as channel volume (see 5.1)
 
-    sudo apt-get install python-opencv python-pygame
+### sudo apt-get install python-opencv python-pygame
 
   * http://opencv.willowgarage.com/documentation/python/reading_and_writing_images_and_video.html#capturefromcam
   * http://opencv.willowgarage.com/documentation/python/reading_and_writing_images_and_video.html#queryframe
@@ -22,6 +22,7 @@ Dynamic Sound
   * libsdl ? ossaudiodev.openmixer ? ncurses
 
 _TODO_ find 5.1 python volume mixer (found stereo, not surround)
+
 _TODO_ test with usb 5.1 or hdmi digital output + hdmi surround hifi
 
   * http://en.store.creative.com/sound-blaster/sound-blaster-x-fi-surround-5-1-pro/1-20055.aspx
@@ -29,7 +30,7 @@ _TODO_ test with usb 5.1 or hdmi digital output + hdmi surround hifi
   * http://hg.pygame.org/pygame/src/d1cbb8c9d94b/test/playwave.py#cl-181
   * http://hg.pygame.org/pygame/src/9c6aa550da25/doc/src/openal_constants.rst#cl-69
 
-# API usage: `0.0` < `weight` < `1.0`
+## API usage: `0.0` < `weight` < `1.0`
 
     DynamicSound.weight = {
         "up": {
