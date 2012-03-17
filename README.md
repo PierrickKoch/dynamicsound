@@ -35,6 +35,7 @@ _TODO_ test with usb 5.1 or hdmi digital output + hdmi surround hifi
   * https://bitbucket.org/pygame/pygame/issue/113
   * http://crystalspace3d.org "3D sounds" !
 
+
 ## API usage: `0.0` < `weight` < `1.0`
 
     DynamicSound.weight = {

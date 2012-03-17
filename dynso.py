@@ -39,7 +39,6 @@ class DynamicSound(object):
         pygame.mixer.quit()
 
     def setvolume(self, volume, right=None):
-        print(volume, right)
         if not self._channel:
             return # not playing
         if right:
@@ -99,7 +98,7 @@ class DynamicSound(object):
         # max -> 1.0
         def get_weight(value):
             if highest > 1:
-                tmp = value / highest
+                tmp = (value / highest) / 2
                 return round(tmp, 4) if tmp > 0.1 else 0.1
             else:
                 return 1.0
@@ -134,9 +133,7 @@ class DynamicSound(object):
     def weight_to_volume(self):
         vleft = self.weight['up']['left'] + self.weight['down']['left']
         vright = self.weight['up']['right'] + self.weight['down']['right']
-        highest = max(vleft, vright)
-        vleft = round(vleft / highest, 2)
-        vright = round(vright / highest, 2)
+        print("%.2f %.2f"%(vleft, vright))
         self.setvolume(vleft, vright)
 
     def flow_to_volume(self, velx, vely):
