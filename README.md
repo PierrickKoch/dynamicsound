@@ -12,7 +12,7 @@ Dynamic Sound
 
 [![youtube](https://i2.ytimg.com/vi/S1fjLfp3Gb8/sddefault.jpg "youtube")](http://youtube.com/embed/S1fjLfp3Gb8?rel=0)
 
-### sudo apt-get install python-opencv python-pygame
+`sudo apt-get install python-opencv python-pygame`
 
   * http://opencv.willowgarage.com/documentation/python/reading_and_writing_images_and_video.html#capturefromcam
   * http://opencv.willowgarage.com/documentation/python/reading_and_writing_images_and_video.html#queryframe
@@ -35,8 +35,10 @@ _TODO_ test with usb 5.1 or hdmi digital output + hdmi surround hifi
   * https://bitbucket.org/pygame/pygame/issue/113
   * http://crystalspace3d.org "3D sounds" !
 
+---
 
-## API usage: `0.0` < `weight` < `1.0`
+API usage: `0.0` < `weight` < `1.0`
+-----------------------------------
 
     DynamicSound.weight = {
         "up": {

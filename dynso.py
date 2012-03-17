@@ -133,7 +133,7 @@ class DynamicSound(object):
     def weight_to_volume(self):
         vleft = self.weight['up']['left'] + self.weight['down']['left']
         vright = self.weight['up']['right'] + self.weight['down']['right']
-        print("%.2f %.2f"%(vleft, vright))
+        print("%.2f %.2f"%(vleft, vright)) # debug
         self.setvolume(vleft, vright)
 
     def flow_to_volume(self, velx, vely):
