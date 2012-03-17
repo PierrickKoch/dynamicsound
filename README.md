@@ -10,7 +10,7 @@ Dynamic Sound
     * weight each 4 quart of the frame (0.0 < weight < 1.0)
     * apply weight as channel volume (see 5.1)
 
-sudo apt-get install python-opencv python-pygame
+    sudo apt-get install python-opencv python-pygame
 
   * http://opencv.willowgarage.com/documentation/python/reading_and_writing_images_and_video.html#capturefromcam
   * http://opencv.willowgarage.com/documentation/python/reading_and_writing_images_and_video.html#queryframe
@@ -26,17 +26,10 @@ _TODO_ test with usb 5.1 or hdmi digital output + hdmi surround hifi
 
   * http://en.store.creative.com/sound-blaster/sound-blaster-x-fi-surround-5-1-pro/1-20055.aspx
   * http://usa.yamaha.com/products/audio-visual/av-receivers-amps/rx
-
-    #-#-#
-    |   |
-    | O |
-    #---#
-
   * http://hg.pygame.org/pygame/src/d1cbb8c9d94b/test/playwave.py#cl-181
   * http://hg.pygame.org/pygame/src/9c6aa550da25/doc/src/openal_constants.rst#cl-69
 
-
-API usage: `0.0` < `weight` < `1.0`
+# API usage: `0.0` < `weight` < `1.0`
 
     DynamicSound.weight = {
         "up": {
