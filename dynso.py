@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 """
 Dynamic Sound project
-usage: python dynso.py
+usage: python dynso.py [MUSIC{.ogg|.wav}]
 
 http://opensource.org/licenses/BSD-3-Clause
 
   1. init:
-    * capturefromcam
-    * play music
+    * capture from cam
+    * play sound (music)
   2. while 1
-    * queryframe (from cam)
-    * calcopticalflowlk (or some other magic, ideally object reco/tracking)
+    * query frame (from cam)
+    * calc optical flow lk (or some other magic, ideally object reco/tracking)
     * weight each 4 quart of the frame (0.0 < weight < 1.0)
     * apply weight as channel volume (see 5.1)
 
@@ -22,6 +22,7 @@ sudo apt-get install python-opencv python-pygame
   * http://pygame.org/docs/ref/mixer.html#Channel.set_volume
   * http://en.wikipedia.org/wiki/Surround_sound
   * http://wiki.python.org/moin/PythonInMusic
+  * http://www.libsdl.org/projects/SDL_mixer/
   * libsdl ? ossaudiodev.openmixer ? ncurses
 
 TODO find 5.1 python volume mixer (found stereo, not surround)
@@ -81,7 +82,7 @@ class DynamicSound(object):
         self._channel = None
         # CV / V4L Camera ID
         self._capture = cv.CaptureFromCAM(-1)
-        pygame.mixer.init(channels=2)
+        pygame.mixer.init(channels=2) # max channels = 2 :/
     def __del__(self):
         # close stuff
         pygame.mixer.quit()
@@ -108,15 +109,14 @@ class DynamicSound(object):
         vely = cv.CreateImage(imgsize, cv.IPL_DEPTH_32F, 1)
         winsize = (3, 3)
         # init windows (for debug)
-        cv.NamedWindow("upleft")
-        cv.NamedWindow("upright")
-        cv.NamedWindow("downleft")
         cv.NamedWindow("downright")
+        cv.NamedWindow("downleft")
+        cv.NamedWindow("upright")
+        cv.NamedWindow("upleft")
+        cv.MoveWindow("downright", img.width // 2, img.height // 2 + 20)
+        cv.MoveWindow("downleft", 0, img.height // 2 + 20)
+        cv.MoveWindow("upright", img.width // 2, 0)
         cv.MoveWindow("upleft", 0, 0)
-        cv.MoveWindow("upright", img.width//2, 0)
-        cv.MoveWindow("downleft", 0, img.height//2)
-        cv.MoveWindow("downright", img.width//2, img.height//2)
-        cv.WaitKey(10)
         while 1:
             imgprev = imgcurr
             img = cv.QueryFrame(self._capture)
@@ -138,6 +138,8 @@ class DynamicSound(object):
         cv.ConvertScaleAbs(vely, vely8u)
         image = cv.CreateImage(imgsize, cv.IPL_DEPTH_8U, 1)
         cv.AddWeighted(velx8u, 0.5, vely8u, 0.5, 0, image)
+        # TODO use inverse pyramide to ponderate the weight ?
+        # ie. moves in corners are more important than in the center
         cv.Flip(image, flipMode=1) # for webcam
         return image
 
@@ -174,6 +176,7 @@ class DynamicSound(object):
         cv.SetImageROI(image, (midx, midy, image.width, image.height))
         sum_down_right = cv.Sum(image)
         cv.ShowImage("downright", image)
+        # sum to weight
         self.sum_to_weight(sum_up_left[0], sum_up_right[0], 
                            sum_down_left[0], sum_down_right[0])
 
