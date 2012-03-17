@@ -98,7 +98,7 @@ class DynamicSound(object):
         # max -> 1.0
         def get_weight(value):
             if highest > 1:
-                tmp = (value / highest) / 2
+                tmp = value / highest
                 return round(tmp, 4) if tmp > 0.1 else 0.1
             else:
                 return 1.0
@@ -131,8 +131,10 @@ class DynamicSound(object):
                            sum_down_left[0], sum_down_right[0])
 
     def weight_to_volume(self):
-        vleft = self.weight['up']['left'] + self.weight['down']['left']
-        vright = self.weight['up']['right'] + self.weight['down']['right']
+        vleft = (self.weight['up']['left'] / 2.0 + 
+                 self.weight['down']['left'] / 2.0)
+        vright = (self.weight['up']['right'] / 2.0 + 
+                  self.weight['down']['right'] / 2.0)
         print("%.2f %.2f"%(vleft, vright)) # debug
         self.setvolume(vleft, vright)
 
