@@ -39,6 +39,9 @@ _TODO_ test with usb 5.1 or hdmi digital output + hdmi surround hifi
   * http://hg.pygame.org/pygame/src/9c6aa550da25/doc/src/openal_constants.rst#cl-69
   * https://bitbucket.org/pygame/pygame/issue/113
   * http://crystalspace3d.org "3D sounds" !
+  * http://pysonic.sourceforge.net ! (based on closed src lib :/ )
+    * http://fmod.org/products/fmodex.html
+    * https://www.google.com/search?q=3d+sound+python
 
 ---
 
