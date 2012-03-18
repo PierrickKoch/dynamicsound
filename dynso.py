@@ -79,7 +79,7 @@ class DynamicSound(object):
             # TODO image(t) - image(t-10) = moved
             #      moved / 4 sum -> %
             self.sub_to_volume(imagecurr, imageprev)
-            key = cv.WaitKey(10) & 255
+            key = cv.WaitKey(100) & 255
             # If ESC key pressed Key=0x1B, Key=0x10001B under OpenCV linux
             if key == 27: # aka ESCAPE
                 self.capturing = False
