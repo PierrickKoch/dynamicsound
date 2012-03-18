@@ -17,6 +17,7 @@ Dynamic Sound
   * http://opencv.willowgarage.com/documentation/python/reading_and_writing_images_and_video.html#capturefromcam
   * http://opencv.willowgarage.com/documentation/python/reading_and_writing_images_and_video.html#queryframe
   * http://opencv.willowgarage.com/documentation/python/video_motion_analysis_and_object_tracking.html#calcopticalflowlk
+  * http://opencv.willowgarage.com/documentation/python/core_operations_on_arrays.html#sub
   * http://pygame.org/docs/ref/mixer.html#Channel.set_volume
   * http://en.wikipedia.org/wiki/Surround_sound
   * http://en.wikipedia.org/wiki/DVD-Audio
