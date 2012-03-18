@@ -34,7 +34,9 @@ class DynamicSound(object):
         self._channel = None
         self._capture = cv.CaptureFromCAM(-1)
         pygame.mixer.init(channels=2) # max channels = 2 :/
+        self.capturing = False
     def __del__(self):
+        pygame.mixer.fadeout(800)
         # close mixer
         pygame.mixer.quit()
 
@@ -51,6 +53,7 @@ class DynamicSound(object):
         self._channel = self._sound.play()
 
     def capture(self):
+        self.capturing = True
         img = cv.QueryFrame(self._capture)
         imgsize = (img.width, img.height)
         imgcurr = cv.CreateImage(imgsize, cv.IPL_DEPTH_8U, 1)
@@ -67,7 +70,7 @@ class DynamicSound(object):
         cv.MoveWindow("downleft", 0, img.height // 2 + 20)
         cv.MoveWindow("upright", img.width // 2, 0)
         cv.MoveWindow("upleft", 0, 0)
-        while 1:
+        while self.capturing:
             imgprev = imgcurr
             img = cv.QueryFrame(self._capture)
             imgcurr = cv.CreateImage(imgsize, cv.IPL_DEPTH_8U, 1)
@@ -78,7 +81,7 @@ class DynamicSound(object):
             key = cv.WaitKey(10) & 255
             # If ESC key pressed Key=0x1B, Key=0x10001B under OpenCV linux
             if key == 27: # aka ESCAPE
-                break
+                self.capturing = False
 
     def flow_xy_to_image(self, velx, vely):
         imgsize = (velx.width, velx.height)

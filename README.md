@@ -19,9 +19,13 @@ Dynamic Sound
   * http://opencv.willowgarage.com/documentation/python/video_motion_analysis_and_object_tracking.html#calcopticalflowlk
   * http://pygame.org/docs/ref/mixer.html#Channel.set_volume
   * http://en.wikipedia.org/wiki/Surround_sound
+  * http://en.wikipedia.org/wiki/DVD-Audio
+  * http://en.wikipedia.org/wiki/Category:Albums_in_5.1
   * http://wiki.python.org/moin/PythonInMusic
   * http://www.libsdl.org/projects/SDL_mixer/
+    * https://www.google.com/search?q=python+site:libsdl.org
   * http://connect.creativelabs.com/openal
+    * https://www.google.com/search?q=python+site:opensource.creative.com%2Fpipermail%2Fopenal
   * libsdl ? ossaudiodev.openmixer ? ncurses
 
 _TODO_ find 5.1 python volume mixer (found stereo, not surround)
