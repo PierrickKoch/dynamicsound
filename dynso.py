@@ -54,43 +54,40 @@ class DynamicSound(object):
 
     def capture(self):
         self.capturing = True
-        img = cv.QueryFrame(self._capture)
-        imgsize = (img.width, img.height)
-        imgcurr = cv.CreateImage(imgsize, cv.IPL_DEPTH_8U, 1)
-        cv.CvtColor(img, imgcurr, cv.CV_RGB2GRAY)
-        velx = cv.CreateImage(imgsize, cv.IPL_DEPTH_32F, 1)
-        vely = cv.CreateImage(imgsize, cv.IPL_DEPTH_32F, 1)
-        winsize = (3, 3)
+        image = cv.QueryFrame(self._capture)
+        imagesize = (image.width, image.height)
+        imagecurr = cv.CreateImage(imagesize, cv.IPL_DEPTH_8U, 1)
+        cv.CvtColor(image, imagecurr, cv.CV_RGB2GRAY)
+        midx = image.width // 2
+        midy = image.height // 2
+        del image
         # init windows (for debug)
         cv.NamedWindow("downright")
         cv.NamedWindow("downleft")
         cv.NamedWindow("upright")
         cv.NamedWindow("upleft")
-        cv.MoveWindow("downright", img.width // 2, img.height // 2 + 20)
-        cv.MoveWindow("downleft", 0, img.height // 2 + 20)
-        cv.MoveWindow("upright", img.width // 2, 0)
+        cv.MoveWindow("downright", midx, midy + 20)
+        cv.MoveWindow("downleft", 0, midy + 20)
+        cv.MoveWindow("upright", midx, 0)
         cv.MoveWindow("upleft", 0, 0)
         while self.capturing:
-            imgprev = imgcurr
-            img = cv.QueryFrame(self._capture)
-            imgcurr = cv.CreateImage(imgsize, cv.IPL_DEPTH_8U, 1)
-            cv.CvtColor(img, imgcurr, cv.CV_RGB2GRAY)
-            cv.CalcOpticalFlowLK(imgprev, imgcurr, winsize, velx, vely)
-            # x*y / 4 sum -> %
-            self.flow_to_volume(velx, vely)
+            imageprev = imagecurr
+            image = cv.QueryFrame(self._capture)
+            imagecurr = cv.CreateImage(imagesize, cv.IPL_DEPTH_8U, 1)
+            cv.CvtColor(image, imagecurr, cv.CV_RGB2GRAY)
+            del image
+            # TODO image(t) - image(t-10) = moved
+            #      moved / 4 sum -> %
+            self.sub_to_volume(imagecurr, imageprev)
             key = cv.WaitKey(10) & 255
             # If ESC key pressed Key=0x1B, Key=0x10001B under OpenCV linux
             if key == 27: # aka ESCAPE
                 self.capturing = False
 
-    def flow_xy_to_image(self, velx, vely):
-        imgsize = (velx.width, velx.height)
-        velx8u = cv.CreateImage(imgsize, cv.IPL_DEPTH_8U, 1)
-        vely8u = cv.CreateImage(imgsize, cv.IPL_DEPTH_8U, 1)
-        cv.ConvertScaleAbs(velx, velx8u)
-        cv.ConvertScaleAbs(vely, vely8u)
-        image = cv.CreateImage(imgsize, cv.IPL_DEPTH_8U, 1)
-        cv.AddWeighted(velx8u, 0.5, vely8u, 0.5, 0, image)
+    def sub_image(self, imagecurr, imageprev):
+        imagesize = (imagecurr.width, imagecurr.height)
+        image = cv.CreateImage(imagesize, cv.IPL_DEPTH_8U, 1)
+        cv.Sub(imagecurr, imageprev, image)
         # TODO use inverse pyramide to ponderate the weight ?
         # ie. moves in corners are more important than in the center
         cv.Flip(image, flipMode=1) # for webcam
@@ -141,8 +138,8 @@ class DynamicSound(object):
         print("%.2f %.2f"%(vleft, vright)) # debug
         self.setvolume(vleft, vright)
 
-    def flow_to_volume(self, velx, vely):
-        image = self.flow_xy_to_image(velx, vely)
+    def sub_to_volume(self, imagecurr, imageprev):
+        image = self.sub_image(imagecurr, imageprev)
         self.image_to_weight(image)
         self.weight_to_volume()
 
