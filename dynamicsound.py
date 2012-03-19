@@ -30,8 +30,10 @@ class DynamicSound(object):
         }
     }
     def __init__(self):
-        self._sound = None
-        self._channel = None
+        self._sound = {'down': {'right': None, 'left': None}, 
+                       'up': {'right': None, 'left': None}}
+        self._channel = {'down': {'right': None, 'left': None}, 
+                         'up': {'right': None, 'left': None}}
         self._capture = cv.CaptureFromCAM(-1)
         pygame.mixer.init(channels=2) # max channels = 2 :/
         self.capturing = False
@@ -40,17 +42,23 @@ class DynamicSound(object):
         # close mixer
         pygame.mixer.quit()
 
-    def setvolume(self, volume, right=None):
+    def setvolume(self, volumeupleft, volumeupright, volumedownleft, volumedownright):
         if not self._channel:
             return # not playing
-        if right:
-            self._channel.set_volume(volume, right)
-        else:
-            self._channel.set_volume(volume)
+        self._channel["up"]["left"].set_volume(volumeupleft)
+        self._channel["up"]["right"].set_volume(volumeupright)
+        self._channel["down"]["left"].set_volume(volumedownleft)
+        self._channel["down"]["right"].set_volume(volumedownright)
 
-    def play(self, path):
-        self._sound = pygame.mixer.Sound(path)
-        self._channel = self._sound.play()
+    def play(self, soundupleft, soundupright, sounddownleft, sounddownright):
+        self._sound["up"]["left"] = pygame.mixer.Sound(soundupleft)
+        self._sound["up"]["right"] = pygame.mixer.Sound(soundupright)
+        self._sound["down"]["left"] = pygame.mixer.Sound(sounddownleft)
+        self._sound["down"]["right"] = pygame.mixer.Sound(sounddownright)
+        self._channel["up"]["left"] = self._sound["up"]["left"].play()
+        self._channel["up"]["right"] = self._sound["up"]["right"].play()
+        self._channel["down"]["left"] = self._sound["down"]["left"].play()
+        self._channel["down"]["right"] = self._sound["down"]["right"].play()
 
     def capture(self):
         self.capturing = True
@@ -131,12 +139,11 @@ class DynamicSound(object):
                            sum_down_left[0], sum_down_right[0])
 
     def weight_to_volume(self):
-        vleft = (self.weight['up']['left'] / 2.0 + 
-                 self.weight['down']['left'] / 2.0)
-        vright = (self.weight['up']['right'] / 2.0 + 
-                  self.weight['down']['right'] / 2.0)
-        print("%.2f %.2f"%(vleft, vright)) # debug
-        self.setvolume(vleft, vright)
+        # TODO some linearization
+        self.setvolume(self.weight['up']['left'],
+                       self.weight['up']['right'],
+                       self.weight['down']['left'],
+                       self.weight['down']['right'])
 
     def sub_to_volume(self, imagecurr, imageprev):
         image = self.sub_image(imagecurr, imageprev)
@@ -148,12 +155,26 @@ def main(args):
         sys.stderr.write(__doc__)
         return 1
 
-    path = "/media/data/media/music/Yoshimi Battles the Pink Robots [5.1]/06 Ego Tripping at the Gates of Hell.ogg"
+    path = "/media/data/media/music/Yoshimi Battles the Pink Robots [5.1]/"
+    title = ["04 Yoshimi Battles the Pink Robots (Part 2).ogg",
+             "05 In the Morning of the Magicians.ogg",
+             "06 Ego Tripping at the Gates of Hell.ogg",
+             "07 Are You a Hypnotist.ogg"]
+
     if len(args) > 1:
-        path = args[1]
+        soundupleft = args[1]
+        soundupright = args[2]
+        sounddownleft = args[3]
+        sounddownright = args[4]
+    else:
+        # DEBUG
+        soundupleft = path+title.pop()
+        soundupright = path+title.pop()
+        sounddownleft = path+title.pop()
+        sounddownright = path+title.pop()
     dynso = DynamicSound()
     print("get ready!")
-    dynso.play(path)
+    dynso.play(soundupleft, soundupright, sounddownleft, sounddownright)
     print("opencv is magic!")
     dynso.capture()
 
