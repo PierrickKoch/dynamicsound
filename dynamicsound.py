@@ -3,6 +3,8 @@
 Dynamic Sound project
 usage: python dynso.py [MUSIC{.ogg|.wav}]
 
+    soundupleft, soundupright, sounddownleft, sounddownright
+
 http://opensource.org/licenses/BSD-3-Clause
 """
 
@@ -19,21 +21,14 @@ except ImportError:
     sys.exit(1)
 
 class DynamicSound(object):
-    weight = {
-        "up": {
-            "left": 0,
-            "right": 0
-        },
-        "down": {
-            "left": 0,
-            "right": 0
-        }
-    }
+    UP_LEFT = 0
+    UP_RIGHT = 1
+    DOWN_LEFT = 2
+    DOWN_RIGHT = 3
+    weight = [0.0]*4
     def __init__(self):
-        self._sound = {'down': {'right': None, 'left': None}, 
-                       'up': {'right': None, 'left': None}}
-        self._channel = {'down': {'right': None, 'left': None}, 
-                         'up': {'right': None, 'left': None}}
+        self._sound = [None]*4
+        self._channel = [None]*4
         self._capture = cv.CaptureFromCAM(-1)
         pygame.mixer.init(channels=2) # max channels = 2 :/
         self.capturing = False
@@ -45,20 +40,25 @@ class DynamicSound(object):
     def setvolume(self, volumeupleft, volumeupright, volumedownleft, volumedownright):
         if not self._channel:
             return # not playing
-        self._channel["up"]["left"].set_volume(volumeupleft)
-        self._channel["up"]["right"].set_volume(volumeupright)
-        self._channel["down"]["left"].set_volume(volumedownleft)
-        self._channel["down"]["right"].set_volume(volumedownright)
+        self._channel[DynamicSound.UP_LEFT].set_volume(volumeupleft)
+        self._channel[DynamicSound.UP_RIGHT].set_volume(volumeupright)
+        self._channel[DynamicSound.DOWN_LEFT].set_volume(volumedownleft)
+        self._channel[DynamicSound.DOWN_RIGHT].set_volume(volumedownright)
 
-    def play(self, soundupleft, soundupright, sounddownleft, sounddownright):
-        self._sound["up"]["left"] = pygame.mixer.Sound(soundupleft)
-        self._sound["up"]["right"] = pygame.mixer.Sound(soundupright)
-        self._sound["down"]["left"] = pygame.mixer.Sound(sounddownleft)
-        self._sound["down"]["right"] = pygame.mixer.Sound(sounddownright)
-        self._channel["up"]["left"] = self._sound["up"]["left"].play()
-        self._channel["up"]["right"] = self._sound["up"]["right"].play()
-        self._channel["down"]["left"] = self._sound["down"]["left"].play()
-        self._channel["down"]["right"] = self._sound["down"]["right"].play()
+    def play(self, sounds):
+        """ play 4 sounds
+        :param sounds: soundupleft, soundupright, sounddownleft, sounddownright
+        """
+        self._sound[DynamicSound.UP_LEFT] = pygame.mixer.Sound(sounds[0])
+        self._sound[DynamicSound.UP_RIGHT] = pygame.mixer.Sound(sounds[1])
+        self._sound[DynamicSound.DOWN_LEFT] = pygame.mixer.Sound(sounds[2])
+        self._sound[DynamicSound.DOWN_RIGHT] = pygame.mixer.Sound(sounds[3])
+        print("4 sound loaded")
+        self._channel[DynamicSound.UP_LEFT] = self._sound[DynamicSound.UP_LEFT].play()
+        self._channel[DynamicSound.UP_RIGHT] = self._sound[DynamicSound.UP_RIGHT].play()
+        self._channel[DynamicSound.DOWN_LEFT] = self._sound[DynamicSound.DOWN_LEFT].play()
+        self._channel[DynamicSound.DOWN_RIGHT] = self._sound[DynamicSound.DOWN_RIGHT].play()
+        print("4 sound playing")
 
     def capture(self):
         self.capturing = True
@@ -84,8 +84,8 @@ class DynamicSound(object):
             imagecurr = cv.CreateImage(imagesize, cv.IPL_DEPTH_8U, 1)
             cv.CvtColor(image, imagecurr, cv.CV_RGB2GRAY)
             del image
-            # TODO image(t) - image(t-10) = moved
-            #      moved / 4 sum -> %
+            # image(t) - image(t-10) = moved
+            # moved / 4 -> sum -> %
             self.sub_to_volume(imagecurr, imageprev)
             key = cv.WaitKey(100) & 255
             # If ESC key pressed Key=0x1B, Key=0x10001B under OpenCV linux
@@ -110,10 +110,10 @@ class DynamicSound(object):
                 return round(tmp, 4) if tmp > 0.1 else 0.1
             else:
                 return 1.0
-        self.weight['up']['left'] = get_weight(up_left)
-        self.weight['up']['right'] = get_weight(up_right)
-        self.weight['down']['left'] = get_weight(down_left)
-        self.weight['down']['right'] = get_weight(down_right)
+        self.weight[DynamicSound.UP_LEFT] = get_weight(up_left)
+        self.weight[DynamicSound.UP_RIGHT] = get_weight(up_right)
+        self.weight[DynamicSound.DOWN_LEFT] = get_weight(down_left)
+        self.weight[DynamicSound.DOWN_RIGHT] = get_weight(down_right)
 
     def image_to_weight(self, image):
         midx = image.width // 2
@@ -139,11 +139,11 @@ class DynamicSound(object):
                            sum_down_left[0], sum_down_right[0])
 
     def weight_to_volume(self):
-        # TODO some linearization
-        self.setvolume(self.weight['up']['left'],
-                       self.weight['up']['right'],
-                       self.weight['down']['left'],
-                       self.weight['down']['right'])
+        # TODO some linearization / fade in / fade out
+        self.setvolume(self.weight[DynamicSound.UP_LEFT],
+                       self.weight[DynamicSound.UP_RIGHT],
+                       self.weight[DynamicSound.DOWN_LEFT],
+                       self.weight[DynamicSound.DOWN_RIGHT])
 
     def sub_to_volume(self, imagecurr, imageprev):
         image = self.sub_image(imagecurr, imageprev)
@@ -155,26 +155,19 @@ def main(args):
         sys.stderr.write(__doc__)
         return 1
 
-    path = "/media/data/media/music/Yoshimi Battles the Pink Robots [5.1]/"
-    title = ["04 Yoshimi Battles the Pink Robots (Part 2).ogg",
-             "05 In the Morning of the Magicians.ogg",
-             "06 Ego Tripping at the Gates of Hell.ogg",
-             "07 Are You a Hypnotist.ogg"]
-
     if len(args) > 1:
-        soundupleft = args[1]
-        soundupright = args[2]
-        sounddownleft = args[3]
-        sounddownright = args[4]
+        sounds = args[1:]
     else:
-        # DEBUG
-        soundupleft = path+title.pop()
-        soundupright = path+title.pop()
-        sounddownleft = path+title.pop()
-        sounddownright = path+title.pop()
+        # TODO TMP DEBUG
+        path = "/media/data/media/music/Yoshimi Battles the Pink Robots [5.1]/"
+        sounds = [path+"04 Yoshimi Battles the Pink Robots (Part 2).ogg",
+                  path+"05 In the Morning of the Magicians.ogg",
+                  path+"06 Ego Tripping at the Gates of Hell.ogg",
+                  path+"07 Are You a Hypnotist.ogg"]
+
     dynso = DynamicSound()
     print("get ready!")
-    dynso.play(soundupleft, soundupright, sounddownleft, sounddownright)
+    dynso.play(sounds)
     print("opencv is magic!")
     dynso.capture()
 
