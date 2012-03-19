@@ -9,6 +9,7 @@ http://opensource.org/licenses/BSD-3-Clause
 """
 
 import sys
+import json
 try:
     import cv
 except ImportError:
@@ -27,25 +28,22 @@ DOWN_RIGHT = 3
 
 class DynamicSound(object):
     def __init__(self):
-        self._sound = [None]*4
-        self._channel = [None]*4
+        self._sound = [None] * 4
+        self._channel = [None] * 4
         self._capture = cv.CaptureFromCAM(-1)
-        pygame.mixer.init(channels=2) # max channels = 2 :/
+        pygame.mixer.init(channels=2) # 1 <= channels <= 2
         self.capturing = False
-        self._weight = [0.0]*4
+        self._weight = [0.0] * 4
     def __del__(self):
         pygame.mixer.fadeout(800)
         # close mixer
         pygame.mixer.quit()
 
     def setvolume(self, volumeupleft, volumeupright, volumedownleft, volumedownright):
-        if not self._channel:
-            return # not playing
         self._channel[UP_LEFT].set_volume(volumeupleft)
         self._channel[UP_RIGHT].set_volume(volumeupright)
         self._channel[DOWN_LEFT].set_volume(volumedownleft)
         self._channel[DOWN_RIGHT].set_volume(volumedownright)
-        print(self.weight)
 
     def play(self, sounds):
         """ play 4 sounds
@@ -139,6 +137,7 @@ class DynamicSound(object):
         # sum to weight
         self.sum_to_weight(sum_up_left[0], sum_up_right[0], 
                            sum_down_left[0], sum_down_right[0])
+        print(json.dumps(self.weight, indent=1))
 
     def weight_to_volume(self):
         # TODO some linearization / fade in / fade out
