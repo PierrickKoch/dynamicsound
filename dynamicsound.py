@@ -20,18 +20,19 @@ except ImportError:
     print("install pygame: sudo apt-get install python-pygame")
     sys.exit(1)
 
+UP_LEFT = 0
+UP_RIGHT = 1
+DOWN_LEFT = 2
+DOWN_RIGHT = 3
+
 class DynamicSound(object):
-    UP_LEFT = 0
-    UP_RIGHT = 1
-    DOWN_LEFT = 2
-    DOWN_RIGHT = 3
-    weight = [0.0]*4
     def __init__(self):
         self._sound = [None]*4
         self._channel = [None]*4
         self._capture = cv.CaptureFromCAM(-1)
         pygame.mixer.init(channels=2) # max channels = 2 :/
         self.capturing = False
+        self._weight = [0.0]*4
     def __del__(self):
         pygame.mixer.fadeout(800)
         # close mixer
@@ -40,24 +41,25 @@ class DynamicSound(object):
     def setvolume(self, volumeupleft, volumeupright, volumedownleft, volumedownright):
         if not self._channel:
             return # not playing
-        self._channel[DynamicSound.UP_LEFT].set_volume(volumeupleft)
-        self._channel[DynamicSound.UP_RIGHT].set_volume(volumeupright)
-        self._channel[DynamicSound.DOWN_LEFT].set_volume(volumedownleft)
-        self._channel[DynamicSound.DOWN_RIGHT].set_volume(volumedownright)
+        self._channel[UP_LEFT].set_volume(volumeupleft)
+        self._channel[UP_RIGHT].set_volume(volumeupright)
+        self._channel[DOWN_LEFT].set_volume(volumedownleft)
+        self._channel[DOWN_RIGHT].set_volume(volumedownright)
+        print(self.weight)
 
     def play(self, sounds):
         """ play 4 sounds
         :param sounds: soundupleft, soundupright, sounddownleft, sounddownright
         """
-        self._sound[DynamicSound.UP_LEFT] = pygame.mixer.Sound(sounds[0])
-        self._sound[DynamicSound.UP_RIGHT] = pygame.mixer.Sound(sounds[1])
-        self._sound[DynamicSound.DOWN_LEFT] = pygame.mixer.Sound(sounds[2])
-        self._sound[DynamicSound.DOWN_RIGHT] = pygame.mixer.Sound(sounds[3])
+        self._sound[UP_LEFT] = pygame.mixer.Sound(sounds[UP_LEFT])
+        self._sound[UP_RIGHT] = pygame.mixer.Sound(sounds[UP_RIGHT])
+        self._sound[DOWN_LEFT] = pygame.mixer.Sound(sounds[DOWN_LEFT])
+        self._sound[DOWN_RIGHT] = pygame.mixer.Sound(sounds[DOWN_RIGHT])
         print("4 sound loaded")
-        self._channel[DynamicSound.UP_LEFT] = self._sound[DynamicSound.UP_LEFT].play()
-        self._channel[DynamicSound.UP_RIGHT] = self._sound[DynamicSound.UP_RIGHT].play()
-        self._channel[DynamicSound.DOWN_LEFT] = self._sound[DynamicSound.DOWN_LEFT].play()
-        self._channel[DynamicSound.DOWN_RIGHT] = self._sound[DynamicSound.DOWN_RIGHT].play()
+        self._channel[UP_LEFT] = self._sound[UP_LEFT].play()
+        self._channel[UP_RIGHT] = self._sound[UP_RIGHT].play()
+        self._channel[DOWN_LEFT] = self._sound[DOWN_LEFT].play()
+        self._channel[DOWN_RIGHT] = self._sound[DOWN_RIGHT].play()
         print("4 sound playing")
 
     def capture(self):
@@ -110,10 +112,10 @@ class DynamicSound(object):
                 return round(tmp, 4) if tmp > 0.1 else 0.1
             else:
                 return 1.0
-        self.weight[DynamicSound.UP_LEFT] = get_weight(up_left)
-        self.weight[DynamicSound.UP_RIGHT] = get_weight(up_right)
-        self.weight[DynamicSound.DOWN_LEFT] = get_weight(down_left)
-        self.weight[DynamicSound.DOWN_RIGHT] = get_weight(down_right)
+        self._weight[UP_LEFT] = get_weight(up_left)
+        self._weight[UP_RIGHT] = get_weight(up_right)
+        self._weight[DOWN_LEFT] = get_weight(down_left)
+        self._weight[DOWN_RIGHT] = get_weight(down_right)
 
     def image_to_weight(self, image):
         midx = image.width // 2
@@ -140,15 +142,28 @@ class DynamicSound(object):
 
     def weight_to_volume(self):
         # TODO some linearization / fade in / fade out
-        self.setvolume(self.weight[DynamicSound.UP_LEFT],
-                       self.weight[DynamicSound.UP_RIGHT],
-                       self.weight[DynamicSound.DOWN_LEFT],
-                       self.weight[DynamicSound.DOWN_RIGHT])
+        self.setvolume(self._weight[UP_LEFT],
+                       self._weight[UP_RIGHT],
+                       self._weight[DOWN_LEFT],
+                       self._weight[DOWN_RIGHT])
 
     def sub_to_volume(self, imagecurr, imageprev):
         image = self.sub_image(imagecurr, imageprev)
         self.image_to_weight(image)
         self.weight_to_volume()
+
+    @property
+    def weight(self):
+        return {
+                "up": {
+                    "left": self._weight[UP_LEFT],
+                    "right": self._weight[UP_RIGHT]
+                },
+                "down": {
+                    "left": self._weight[DOWN_LEFT],
+                    "right": self._weight[DOWN_RIGHT]
+                }
+               }
 
 def main(args):
     if "-h" in args:
