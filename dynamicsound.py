@@ -34,7 +34,7 @@ class DynamicSound(object):
         self._capture = cv.CaptureFromCAM(-1)
         pygame.mixer.init(channels=2) # 1 <= channels <= 2
         self.capturing = False
-        self._weight = [[0.0] * LIST_SIZE] * 4
+        self._weight = [0.0] * 4
     def __del__(self):
         pygame.mixer.fadeout(800)
         # close mixer
@@ -43,7 +43,7 @@ class DynamicSound(object):
     def setvolume(self, volume):
         for i in xrange(4):
             self._channel[i].set_volume(volume[i])
-        print(" %.2f %.2f %.2f %.2f "%volume)
+        print(" %.2f %.2f %.2f %.2f "%tuple(volume))
 
     def play(self, sounds):
         """ play 4 sounds
@@ -52,6 +52,8 @@ class DynamicSound(object):
         """
         for i in xrange(4):
             self._sound[i] = pygame.mixer.Sound(sounds[i])
+        print("debug: 4 sounds loaded")
+        for i in xrange(4):
             self._channel[i] = self._sound[i].play()
             self._channel[i].set_volume(0.1)
         print("debug: 4 sounds playing")
@@ -83,7 +85,7 @@ class DynamicSound(object):
             # image(t) - image(t-10) = moved
             # moved / 4 -> sum -> %
             self.sub_to_volume(imagecurr, imageprev)
-            key = cv.WaitKey(10) & 255
+            key = cv.WaitKey(100) & 255
             # If ESC key pressed Key=0x1B, Key=0x10001B under OpenCV linux
             if key == 27: # aka ESCAPE
                 self.capturing = False
@@ -98,29 +100,9 @@ class DynamicSound(object):
         return image
 
     def sum_to_weight(self, sums):
-        highest = max(sums)
-        # max -> 1.0
-        def get_weight(value):
-            if highest > 1:
-                tmp = value / highest
-                return round(tmp, 4) if tmp > 0.1 else 0.1
-            else:
-                return 1.0
-        # LILO
-        weight_tmp = [0.0] * 4
-        for i in xrange(4):
-            tmp = self._weight[i][1:]
-            tmp.append(0.0)
-            self._weight[i] = tmp
-            weight_tmp[i] = get_weight(sums[i])
-        # test: max -> 1.0; 3 others -> 0.0
-        weight_max = max(weight_tmp)
-        pos_max = 0
-        for i in xrange(4):
-            if weight_max == weight_tmp[i]:
-                pos_max = i
-                break
-        self._weight[pos_max][-1] = 1.0
+        posmax = sums.index(max(sums))
+        self._weight[posmax] += 1
+        self._weight = [w / 2 for w in self._weight]
 
     def image_to_weight(self, image):
         midx = image.width // 2
@@ -144,22 +126,15 @@ class DynamicSound(object):
         # sum to weight
         self.sum_to_weight((sum_up_left[0], sum_up_right[0],
                             sum_down_left[0], sum_down_right[0]))
-        #print(json.dumps(self.weight, indent=1))
-
-    def weight_to_volume(self):
-        # TODO some linearization / fade in / fade out
-        self.setvolume((sum(self._weight[UP_LEFT]) / LIST_SIZE,
-                        sum(self._weight[UP_RIGHT]) / LIST_SIZE,
-                        sum(self._weight[DOWN_LEFT]) / LIST_SIZE,
-                        sum(self._weight[DOWN_RIGHT]) / LIST_SIZE))
 
     def sub_to_volume(self, imagecurr, imageprev):
         image = self.sub_image(imagecurr, imageprev)
         self.image_to_weight(image)
-        self.weight_to_volume()
+        self.setvolume(self._weight)
 
     @property
     def weight(self):
+        # TIPS: use json.dumps(self.weight, indent=1)
         return {
                 "up": {
                     "left": self._weight[UP_LEFT],
