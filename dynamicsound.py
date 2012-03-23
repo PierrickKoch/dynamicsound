@@ -25,6 +25,7 @@ UP_LEFT = 0
 UP_RIGHT = 1
 DOWN_LEFT = 2
 DOWN_RIGHT = 3
+LIST_SIZE = 10
 
 class DynamicSound(object):
     def __init__(self):
@@ -33,32 +34,26 @@ class DynamicSound(object):
         self._capture = cv.CaptureFromCAM(-1)
         pygame.mixer.init(channels=2) # 1 <= channels <= 2
         self.capturing = False
-        self._weight = [0.0] * 4
+        self._weight = [[0.0] * LIST_SIZE] * 4
     def __del__(self):
         pygame.mixer.fadeout(800)
         # close mixer
         pygame.mixer.quit()
 
-    def setvolume(self, volumeupleft, volumeupright, volumedownleft, volumedownright):
-        self._channel[UP_LEFT].set_volume(volumeupleft)
-        self._channel[UP_RIGHT].set_volume(volumeupright)
-        self._channel[DOWN_LEFT].set_volume(volumedownleft)
-        self._channel[DOWN_RIGHT].set_volume(volumedownright)
+    def setvolume(self, volume):
+        for i in xrange(4):
+            self._channel[i].set_volume(volume[i])
 
     def play(self, sounds):
         """ play 4 sounds
-        :param sounds: soundupleft, soundupright, sounddownleft, sounddownright
+        :param sounds: list of 4 path to sound {.wav|.ogg}
+                       soundupleft, soundupright, sounddownleft, sounddownright
         """
-        self._sound[UP_LEFT] = pygame.mixer.Sound(sounds[UP_LEFT])
-        self._sound[UP_RIGHT] = pygame.mixer.Sound(sounds[UP_RIGHT])
-        self._sound[DOWN_LEFT] = pygame.mixer.Sound(sounds[DOWN_LEFT])
-        self._sound[DOWN_RIGHT] = pygame.mixer.Sound(sounds[DOWN_RIGHT])
-        print("4 sound loaded")
-        self._channel[UP_LEFT] = self._sound[UP_LEFT].play()
-        self._channel[UP_RIGHT] = self._sound[UP_RIGHT].play()
-        self._channel[DOWN_LEFT] = self._sound[DOWN_LEFT].play()
-        self._channel[DOWN_RIGHT] = self._sound[DOWN_RIGHT].play()
-        print("4 sound playing")
+        for i in xrange(4):
+            self._sound[i] = pygame.mixer.Sound(sounds[i])
+            self._channel[i] = self._sound[i].play()
+            self._channel[i].set_volume(0.1)
+        print("debug: 4 sounds playing")
 
     def capture(self):
         self.capturing = True
@@ -87,7 +82,7 @@ class DynamicSound(object):
             # image(t) - image(t-10) = moved
             # moved / 4 -> sum -> %
             self.sub_to_volume(imagecurr, imageprev)
-            key = cv.WaitKey(100) & 255
+            key = cv.WaitKey(10) & 255
             # If ESC key pressed Key=0x1B, Key=0x10001B under OpenCV linux
             if key == 27: # aka ESCAPE
                 self.capturing = False
@@ -101,8 +96,8 @@ class DynamicSound(object):
         cv.Flip(image, flipMode=1) # for webcam
         return image
 
-    def sum_to_weight(self, up_left, up_right, down_left, down_right):
-        highest = max(up_left, up_right, down_left, down_right)
+    def sum_to_weight(self, sums):
+        highest = max(sums)
         # max -> 1.0
         def get_weight(value):
             if highest > 1:
@@ -110,10 +105,11 @@ class DynamicSound(object):
                 return round(tmp, 4) if tmp > 0.1 else 0.1
             else:
                 return 1.0
-        self._weight[UP_LEFT] = get_weight(up_left)
-        self._weight[UP_RIGHT] = get_weight(up_right)
-        self._weight[DOWN_LEFT] = get_weight(down_left)
-        self._weight[DOWN_RIGHT] = get_weight(down_right)
+        # LILO
+        for i in xrange(4):
+            tmp = self._weight[i][1:]
+            tmp.append(get_weight(sums[i]))
+            self._weight[i] = tmp
 
     def image_to_weight(self, image):
         midx = image.width // 2
@@ -135,16 +131,16 @@ class DynamicSound(object):
         sum_down_right = cv.Sum(image)
         cv.ShowImage("downright", image)
         # sum to weight
-        self.sum_to_weight(sum_up_left[0], sum_up_right[0], 
-                           sum_down_left[0], sum_down_right[0])
+        self.sum_to_weight((sum_up_left[0], sum_up_right[0],
+                            sum_down_left[0], sum_down_right[0]))
         print(json.dumps(self.weight, indent=1))
 
     def weight_to_volume(self):
         # TODO some linearization / fade in / fade out
-        self.setvolume(self._weight[UP_LEFT],
-                       self._weight[UP_RIGHT],
-                       self._weight[DOWN_LEFT],
-                       self._weight[DOWN_RIGHT])
+        self.setvolume((sum(self._weight[UP_LEFT]) / LIST_SIZE,
+                        sum(self._weight[UP_RIGHT]) / LIST_SIZE,
+                        sum(self._weight[DOWN_LEFT]) / LIST_SIZE,
+                        sum(self._weight[DOWN_RIGHT]) / LIST_SIZE))
 
     def sub_to_volume(self, imagecurr, imageprev):
         image = self.sub_image(imagecurr, imageprev)
