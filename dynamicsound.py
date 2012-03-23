@@ -43,6 +43,7 @@ class DynamicSound(object):
     def setvolume(self, volume):
         for i in xrange(4):
             self._channel[i].set_volume(volume[i])
+        print(" %.2f %.2f %.2f %.2f "%volume)
 
     def play(self, sounds):
         """ play 4 sounds
@@ -91,7 +92,7 @@ class DynamicSound(object):
         imagesize = (imagecurr.width, imagecurr.height)
         image = cv.CreateImage(imagesize, cv.IPL_DEPTH_8U, 1)
         cv.Sub(imagecurr, imageprev, image)
-        # TODO use inverse pyramide to ponderate the weight ?
+        # TODO use inverse pyramid to ponderate the weight ?
         # ie. moves in corners are more important than in the center
         cv.Flip(image, flipMode=1) # for webcam
         return image
@@ -106,10 +107,20 @@ class DynamicSound(object):
             else:
                 return 1.0
         # LILO
+        weight_tmp = [0.0] * 4
         for i in xrange(4):
             tmp = self._weight[i][1:]
-            tmp.append(get_weight(sums[i]))
+            tmp.append(0.0)
             self._weight[i] = tmp
+            weight_tmp[i] = get_weight(sums[i])
+        # test: max -> 1.0; 3 others -> 0.0
+        weight_max = max(weight_tmp)
+        pos_max = 0
+        for i in xrange(4):
+            if weight_max == weight_tmp[i]:
+                pos_max = i
+                break
+        self._weight[pos_max][-1] = 1.0
 
     def image_to_weight(self, image):
         midx = image.width // 2
@@ -133,7 +144,7 @@ class DynamicSound(object):
         # sum to weight
         self.sum_to_weight((sum_up_left[0], sum_up_right[0],
                             sum_down_left[0], sum_down_right[0]))
-        print(json.dumps(self.weight, indent=1))
+        #print(json.dumps(self.weight, indent=1))
 
     def weight_to_volume(self):
         # TODO some linearization / fade in / fade out
