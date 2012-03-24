@@ -9,7 +9,7 @@ http://opensource.org/licenses/BSD-3-Clause
 """
 
 import sys
-import json
+import array
 try:
     import cv
 except ImportError:
@@ -35,6 +35,7 @@ class DynamicSound(object):
         pygame.mixer.init(channels=2) # 1 <= channels <= 2
         self.capturing = False
         self._weight = [0.0] * 4
+        self.pyramid = None
     def __del__(self):
         pygame.mixer.fadeout(800)
         # close mixer
@@ -76,6 +77,7 @@ class DynamicSound(object):
         cv.MoveWindow("downleft", 0, midy + 20)
         cv.MoveWindow("upright", midx, 0)
         cv.MoveWindow("upleft", 0, 0)
+        self.init_pyramid(imagesize)
         while self.capturing:
             imageprev = imagecurr
             image = cv.QueryFrame(self._capture)
@@ -90,12 +92,24 @@ class DynamicSound(object):
             if key == 27: # aka ESCAPE
                 self.capturing = False
 
+    def init_pyramid(self, imagesize):
+        self.pyramid = cv.CreateImage(imagesize, cv.IPL_DEPTH_8U, 1)
+        tmp = cv.CreateImage((5, 5), cv.IPL_DEPTH_8U, 1)
+        data = array.array('B', [1, 1, 1, 1, 1,
+                                 1, 2, 2, 2, 1,
+                                 1, 2, 3, 2, 1,
+                                 1, 2, 2, 2, 1,
+                                 1, 1, 1, 1, 1])
+        cv.SetData(tmp, data)
+        cv.Resize(tmp, self.pyramid)
+
     def sub_image(self, imagecurr, imageprev):
         imagesize = (imagecurr.width, imagecurr.height)
         image = cv.CreateImage(imagesize, cv.IPL_DEPTH_8U, 1)
         cv.Sub(imagecurr, imageprev, image)
-        # TODO use inverse pyramid to ponderate the weight ?
+        # use pyramid to ponderate the weight
         # ie. moves in corners are more important than in the center
+        cv.Div(image, self.pyramid, image)
         cv.Flip(image, flipMode=1) # for webcam
         return image
 
