@@ -125,8 +125,9 @@ class DynamicSound(object):
         return image
 
     def sum_to_weight(self, sums):
-        posmax = sums.index(max(sums))
-        self._weight[posmax] += 1
+        maxsum = max(sums)
+        posmax = sums.index(maxsum)
+        self._weight[posmax] += maxsum / sum(sums)
         self._weight = [w / 2.0 for w in self._weight]
 
     def image_to_weight(self, image):
