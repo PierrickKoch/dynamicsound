@@ -34,7 +34,6 @@ class DynamicSound(object):
         pygame.mixer.init(channels=2) # 1 <= channels <= 2
         self.capturing = False
         self._weight = [0.0] * 4
-        self.pyramid = None
         self.cone = None
     def __del__(self):
         pygame.mixer.fadeout(800)
@@ -44,7 +43,7 @@ class DynamicSound(object):
     def setvolume(self, volume):
         for i in xrange(4):
             self._channel[i].set_volume(volume[i])
-        print(" %.2f %.2f %.2f %.2f "%tuple(volume))
+        print(self)
 
     def play(self, sounds):
         """ play 4 sounds
@@ -77,7 +76,6 @@ class DynamicSound(object):
         cv.MoveWindow("downleft", 0, midy + 20)
         cv.MoveWindow("upright", midx, 0)
         cv.MoveWindow("upleft", 0, 0)
-        #self.init_pyramid(imagesize)
         self.init_cone(imagesize)
         while self.capturing:
             imageprev = imagecurr
@@ -86,32 +84,23 @@ class DynamicSound(object):
             cv.CvtColor(image, imagecurr, cv.CV_RGB2GRAY)
             del image
             # image(t) - image(t-10) = moved
-            # moved / 4 -> sum -> %
+            # moved / 4 -> sum -> % -> volume
             self.sub_to_volume(imagecurr, imageprev)
             key = cv.WaitKey(100) & 255
             # If ESC key pressed Key=0x1B, Key=0x10001B under OpenCV linux
             if key == 27: # aka ESCAPE
                 self.capturing = False
 
-    def init_pyramid(self, imagesize):
-        self.pyramid = cv.CreateImage(imagesize, cv.IPL_DEPTH_8U, 1)
-        tmp = cv.CreateImage((5, 5), cv.IPL_DEPTH_8U, 1)
-        data = array.array('B', [1, 1, 1, 1, 1,
-                                 1, 2, 2, 2, 1,
-                                 1, 2, 3, 2, 1,
-                                 1, 2, 2, 2, 1,
-                                 1, 1, 1, 1, 1])
-        cv.SetData(tmp, data)
-        cv.Resize(tmp, self.pyramid)
-
     def init_cone(self, imagesize):
         self.cone = cv.CreateImage(imagesize, cv.IPL_DEPTH_8U, 1)
-        tmp = cv.CreateImage((5, 5), cv.IPL_DEPTH_8U, 1)
-        data = array.array('B', [1, 1, 2, 1, 1,
-                                 1, 2, 3, 2, 1,
-                                 2, 3, 4, 3, 2,
-                                 1, 2, 3, 2, 1,
-                                 1, 1, 2, 1, 1])
+        tmp = cv.CreateImage((7, 7), cv.IPL_DEPTH_8U, 1)
+        data = array.array('B', [1, 1, 1, 2, 1, 1, 1,
+                                 1, 1, 1, 2, 1, 1, 1,
+                                 1, 1, 2, 3, 2, 1, 1,
+                                 2, 2, 3, 4, 3, 2, 2,
+                                 1, 1, 2, 3, 2, 1, 1,
+                                 1, 1, 1, 2, 1, 1, 1,
+                                 1, 1, 1, 2, 1, 1, 1])
         cv.SetData(tmp, data)
         cv.Resize(tmp, self.cone, interpolation=cv.CV_INTER_LINEAR)
         self.display_lowintesity8u(self.cone)
@@ -128,7 +117,7 @@ class DynamicSound(object):
         imagesize = (imagecurr.width, imagecurr.height)
         image = cv.CreateImage(imagesize, cv.IPL_DEPTH_8U, 1)
         cv.Sub(imagecurr, imageprev, image)
-        # use pyramid to ponderate the weight
+        # use pyramid/cone to ponderate the weight
         # ie. moves in corners are more important than in the center
         if divid:
             cv.Div(image, self.cone, image)
@@ -138,7 +127,7 @@ class DynamicSound(object):
     def sum_to_weight(self, sums):
         posmax = sums.index(max(sums))
         self._weight[posmax] += 1
-        self._weight = [w / 2 for w in self._weight]
+        self._weight = [w / 2.0 for w in self._weight]
 
     def image_to_weight(self, image):
         midx = image.width // 2
@@ -181,6 +170,8 @@ class DynamicSound(object):
                     "right": self._weight[DOWN_RIGHT]
                 }
                }
+    def __str__(self):
+        return " %.2f %.2f %.2f %.2f "%tuple(self._weight)
 
 def main(args):
     if "-h" in args:
