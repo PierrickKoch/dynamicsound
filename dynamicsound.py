@@ -6,6 +6,7 @@ usage: python dynso.py [MUSIC{.ogg|.wav}]
     soundupleft, soundupright, sounddownleft, sounddownright
 
 http://opensource.org/licenses/BSD-3-Clause
+http://pierriko.com/dynamicsound/
 """
 
 import sys

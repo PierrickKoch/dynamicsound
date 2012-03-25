@@ -3,14 +3,15 @@ Dynamic Sound
 
   1. `init`
     * capture from cam
-    * play sound (music)
+    * play 4 sounds
   2. `while 1`
     * query frame (from cam)
-    * calc optical flow lk (or some other magic, ideally object reco/tracking)
+    * sub: image(t) - image(t-10) = moved
     * weight each 4 quart of the frame (0.0 < weight < 1.0)
-    * apply weight as channel volume (see 5.1)
+      * moved / 4 quarter images -> sum each quarter px -> % -> volume
+    * apply weight as channel volume
 
-[![youtube](https://i2.ytimg.com/vi/S1fjLfp3Gb8/sddefault.jpg "youtube")](http://youtube.com/embed/S1fjLfp3Gb8?rel=0)
+[![youtube](https://i2.ytimg.com/vi/KJYo7oxTgus/sddefault.jpg "youtube")](http://youtube.com/embed/KJYo7oxTgus?rel=0)
 
 `sudo apt-get install python-opencv python-pygame`
 
@@ -28,11 +29,6 @@ Dynamic Sound
   * http://connect.creativelabs.com/openal
     * https://www.google.com/search?q=python+site:opensource.creative.com%2Fpipermail%2Fopenal
   * libsdl ? ossaudiodev.openmixer ? ncurses
-
-_TODO_ find 5.1 python volume mixer (found stereo, not surround)
-
-_TODO_ test with usb 5.1 or hdmi digital output + hdmi surround hifi
-
   * http://en.store.creative.com/sound-blaster/sound-blaster-x-fi-surround-5-1-pro/1-20055.aspx
   * http://usa.yamaha.com/products/audio-visual/av-receivers-amps/rx
   * http://hg.pygame.org/pygame/src/d1cbb8c9d94b/test/playwave.py#cl-181
@@ -42,6 +38,7 @@ _TODO_ test with usb 5.1 or hdmi digital output + hdmi surround hifi
   * http://pysonic.sourceforge.net ! (based on closed src lib :/ )
     * http://fmod.org/products/fmodex.html
     * https://www.google.com/search?q=3d+sound+python
+  * http://cgit.freedesktop.org/gstreamer/gst-python
 
 ---
 
