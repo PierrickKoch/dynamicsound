@@ -25,7 +25,6 @@ UP_LEFT = 0
 UP_RIGHT = 1
 DOWN_LEFT = 2
 DOWN_RIGHT = 3
-LIST_SIZE = 10
 
 class DynamicSound(object):
     def __init__(self):
@@ -36,6 +35,7 @@ class DynamicSound(object):
         self.capturing = False
         self._weight = [0.0] * 4
         self.pyramid = None
+        self.cone = None
     def __del__(self):
         pygame.mixer.fadeout(800)
         # close mixer
@@ -77,7 +77,8 @@ class DynamicSound(object):
         cv.MoveWindow("downleft", 0, midy + 20)
         cv.MoveWindow("upright", midx, 0)
         cv.MoveWindow("upleft", 0, 0)
-        self.init_pyramid(imagesize)
+        #self.init_pyramid(imagesize)
+        self.init_cone(imagesize)
         while self.capturing:
             imageprev = imagecurr
             image = cv.QueryFrame(self._capture)
@@ -103,13 +104,34 @@ class DynamicSound(object):
         cv.SetData(tmp, data)
         cv.Resize(tmp, self.pyramid)
 
-    def sub_image(self, imagecurr, imageprev):
+    def init_cone(self, imagesize):
+        self.cone = cv.CreateImage(imagesize, cv.IPL_DEPTH_8U, 1)
+        tmp = cv.CreateImage((5, 5), cv.IPL_DEPTH_8U, 1)
+        data = array.array('B', [1, 1, 2, 1, 1,
+                                 1, 2, 3, 2, 1,
+                                 2, 3, 4, 3, 2,
+                                 1, 2, 3, 2, 1,
+                                 1, 1, 2, 1, 1])
+        cv.SetData(tmp, data)
+        cv.Resize(tmp, self.cone, interpolation=cv.CV_INTER_LINEAR)
+        self.display_lowintesity8u(self.cone)
+
+    def display_lowintesity8u(self, image, maxintesity=None):
+        if not maxintesity:
+            (_, maxintesity, _, _) = cv.MinMaxLoc(image)
+            # (minVal, maxVal, minLoc, maxLoc)
+        display = cv.CloneImage(image)
+        cv.Scale(image, display, 255 / maxintesity)
+        cv.ShowImage("display", display)
+
+    def sub_image(self, imagecurr, imageprev, divid=True):
         imagesize = (imagecurr.width, imagecurr.height)
         image = cv.CreateImage(imagesize, cv.IPL_DEPTH_8U, 1)
         cv.Sub(imagecurr, imageprev, image)
         # use pyramid to ponderate the weight
         # ie. moves in corners are more important than in the center
-        cv.Div(image, self.pyramid, image)
+        if divid:
+            cv.Div(image, self.cone, image)
         cv.Flip(image, flipMode=1) # for webcam
         return image
 
