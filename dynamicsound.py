@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 """
 Dynamic Sound project
-usage: python dynso.py [MUSIC{.ogg|.wav}]
+usage: python dynso.py soundupleft soundupright sounddownleft sounddownright
 
-    soundupleft, soundupright, sounddownleft, sounddownright
+    file type {.ogg|.wav}
 
 http://opensource.org/licenses/BSD-3-Clause
 http://pierriko.com/dynamicsound/
+
+TIPS: encode from MP3 to OGG
+
+    ffmpeg -i src.mp3 -vn -acodec libvorbis -ab 192k dst.ogg 
 """
 
 import sys
