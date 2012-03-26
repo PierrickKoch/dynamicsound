@@ -56,6 +56,7 @@ class DynamicSound(object):
                        soundupleft, soundupright, sounddownleft, sounddownright
         """
         for i in xrange(4):
+            # load all in memory, slow!
             self._sound[i] = pygame.mixer.Sound(sounds[i])
         print("debug: 4 sounds loaded")
         for i in xrange(4):
@@ -73,14 +74,13 @@ class DynamicSound(object):
         midy = image.height // 2
         del image
         # init windows (for debug)
-        cv.NamedWindow("downright")
-        cv.NamedWindow("downleft")
-        cv.NamedWindow("upright")
-        cv.NamedWindow("upleft")
-        cv.MoveWindow("downright", midx, midy + 20)
-        cv.MoveWindow("downleft", 0, midy + 20)
-        cv.MoveWindow("upright", midx, 0)
-        cv.MoveWindow("upleft", 0, 0)
+        def init_window(name, x, y):
+            cv.NamedWindow(name)
+            cv.MoveWindow(name, x, y)
+        init_window("downright", midx, midy + 20)
+        init_window("downleft", 0, midy + 20)
+        init_window("upright", midx, 0)
+        init_window("upleft", 0, 0)
         self.init_cone(imagesize)
         while self.capturing:
             imageprev = imagecurr
@@ -129,10 +129,13 @@ class DynamicSound(object):
         cv.Flip(image, flipMode=1) # for webcam
         return image
 
-    def sum_to_weight(self, sums):
+    def sum_to_weight(self, sums, proportional=False):
         maxsum = max(sums)
         posmax = sums.index(maxsum)
-        self._weight[posmax] += maxsum / sum(sums)
+        if proportional: # TODO test real condition with light
+            self._weight[posmax] += maxsum / sum(sums)
+        else: # more "stable"
+            self._weight[posmax] += 1.0
         self._weight = [w / 2.0 for w in self._weight]
 
     def image_to_weight(self, image):
