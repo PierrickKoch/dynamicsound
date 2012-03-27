@@ -39,6 +39,10 @@ Dynamic Sound
     * http://fmod.org/products/fmodex.html
     * https://www.google.com/search?q=3d+sound+python
   * http://cgit.freedesktop.org/gstreamer/gst-python
+  * https://github.com/christhompson/sound_fall
+  * http://code.google.com/p/pyglet/
+  * http://pyglet.org/doc/programming_guide/positional_audio.html
+  * http://pyglet.org/doc/api/pyglet.media.Player-class.html#position
 
 ---
 

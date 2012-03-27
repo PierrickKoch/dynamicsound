@@ -15,6 +15,7 @@ TIPS: encode from MP3 to OGG
 TODO: playlist
 """
 
+import os
 import sys
 import array
 try:
@@ -38,10 +39,12 @@ class DynamicSound(object):
         self._sound = [None] * 4
         self._channel = [None] * 4
         self._capture = cv.CaptureFromCAM(-1)
-        pygame.mixer.init(channels=2) # 1 <= channels <= 2
+        pygame.mixer.init(frequency=44100, channels=2, buffer=2048)
         self.capturing = False
         self._weight = [0.0] * 4
-        self.cone = None
+        self.filter = None
+        self.midx = 0
+        self.midy = 0
     def __del__(self):
         pygame.mixer.fadeout(800)
         # close mixer
@@ -58,6 +61,9 @@ class DynamicSound(object):
                        soundupleft, soundupright, sounddownleft, sounddownright
         """
         for i in xrange(4):
+            if not os.path.isfile(sounds[i]):
+                print("warning: not a file: "+sounds[i])
+                return
             # load all in memory, slow!
             self._sound[i] = pygame.mixer.Sound(sounds[i])
         print("debug: 4 sounds loaded")
@@ -72,18 +78,18 @@ class DynamicSound(object):
         imagesize = (image.width, image.height)
         imagecurr = cv.CreateImage(imagesize, cv.IPL_DEPTH_8U, 1)
         cv.CvtColor(image, imagecurr, cv.CV_RGB2GRAY)
-        midx = image.width // 2
-        midy = image.height // 2
+        self.midx = image.width // 2
+        self.midy = image.height // 2
         del image
         # init windows (for debug)
         def init_window(name, x, y):
             cv.NamedWindow(name)
             cv.MoveWindow(name, x, y)
-        init_window("downright", midx, midy + 20)
-        init_window("downleft", 0, midy + 20)
-        init_window("upright", midx, 0)
+        init_window("downright", self.midx, self.midy + 20)
+        init_window("downleft", 0, self.midy + 20)
+        init_window("upright", self.midx, 0)
         init_window("upleft", 0, 0)
-        self.init_cone(imagesize)
+        self.init_filter(imagesize)
         while self.capturing:
             imageprev = imagecurr
             image = cv.QueryFrame(self._capture)
@@ -98,8 +104,8 @@ class DynamicSound(object):
             if key == 27: # aka ESCAPE
                 self.capturing = False
 
-    def init_cone(self, imagesize):
-        self.cone = cv.CreateImage(imagesize, cv.IPL_DEPTH_8U, 1)
+    def init_filter(self, imagesize):
+        self.filter = cv.CreateImage(imagesize, cv.IPL_DEPTH_8U, 1)
         tmp = cv.CreateImage((7, 7), cv.IPL_DEPTH_8U, 1)
         data = array.array('B', [1, 1, 1, 2, 1, 1, 1,
                                  1, 1, 1, 2, 1, 1, 1,
@@ -109,8 +115,8 @@ class DynamicSound(object):
                                  1, 1, 1, 2, 1, 1, 1,
                                  1, 1, 1, 2, 1, 1, 1])
         cv.SetData(tmp, data)
-        cv.Resize(tmp, self.cone, interpolation=cv.CV_INTER_LINEAR)
-        self.display_lowintesity8u(self.cone)
+        cv.Resize(tmp, self.filter, interpolation=cv.CV_INTER_LINEAR)
+        self.display_lowintesity8u(self.filter)
 
     def display_lowintesity8u(self, image, maxintesity=None):
         if not maxintesity:
@@ -124,10 +130,10 @@ class DynamicSound(object):
         imagesize = (imagecurr.width, imagecurr.height)
         image = cv.CreateImage(imagesize, cv.IPL_DEPTH_8U, 1)
         cv.Sub(imagecurr, imageprev, image)
-        # use pyramid/cone to ponderate the weight
+        # use pyramid/filter to ponderate the weight
         # ie. moves in corners are more important than in the center
         if divid:
-            cv.Div(image, self.cone, image)
+            cv.Div(image, self.filter, image)
         cv.Flip(image, flipMode=1) # for webcam
         return image
 
@@ -141,22 +147,20 @@ class DynamicSound(object):
         self._weight = [w / 2.0 for w in self._weight]
 
     def image_to_weight(self, image):
-        midx = image.width // 2
-        midy = image.height // 2
         # up left ROI
-        cv.SetImageROI(image, (0, 0, midx, midy))
+        cv.SetImageROI(image, (0, 0, self.midx, self.midy))
         sum_up_left = cv.Sum(image)
         cv.ShowImage("upleft", image)
         # up right ROI
-        cv.SetImageROI(image, (midx, 0, image.width, midy))
+        cv.SetImageROI(image, (self.midx, 0, image.width, self.midy))
         sum_up_right = cv.Sum(image)
         cv.ShowImage("upright", image)
         # down left ROI
-        cv.SetImageROI(image, (0, midy, midx, image.height))
+        cv.SetImageROI(image, (0, self.midy, self.midx, image.height))
         sum_down_left = cv.Sum(image)
         cv.ShowImage("downleft", image)
         # down right ROI
-        cv.SetImageROI(image, (midx, midy, image.width, image.height))
+        cv.SetImageROI(image, (self.midx, self.midy, image.width, image.height))
         sum_down_right = cv.Sum(image)
         cv.ShowImage("downright", image)
         # sum to weight
@@ -172,36 +176,26 @@ class DynamicSound(object):
     def weight(self):
         # TIPS: use json.dumps(self.weight, indent=1)
         return {
-                "up": {
-                    "left": self._weight[UP_LEFT],
-                    "right": self._weight[UP_RIGHT]
-                },
-                "down": {
-                    "left": self._weight[DOWN_LEFT],
-                    "right": self._weight[DOWN_RIGHT]
-                }
-               }
+            "up": {
+                "left": self._weight[UP_LEFT],
+                "right": self._weight[UP_RIGHT]
+            },
+            "down": {
+                "left": self._weight[DOWN_LEFT],
+                "right": self._weight[DOWN_RIGHT]
+            }
+        }
     def __str__(self):
         return " %.2f %.2f %.2f %.2f "%tuple(self._weight)
 
 def main(args):
-    if "-h" in args:
+    if "-h" in args or "--help" in args or len(args) < 4:
         sys.stderr.write(__doc__)
         return 1
 
-    if len(args) > 1:
-        sounds = args[1:]
-    else:
-        # TODO TMP DEBUG
-        path = "/media/data/media/music/Yoshimi Battles the Pink Robots [5.1]/"
-        sounds = [path+"04 Yoshimi Battles the Pink Robots (Part 2).ogg",
-                  path+"05 In the Morning of the Magicians.ogg",
-                  path+"06 Ego Tripping at the Gates of Hell.ogg",
-                  path+"07 Are You a Hypnotist.ogg"]
-
     dynso = DynamicSound()
-    print("get ready!")
-    dynso.play(sounds)
+    print("get ready! press ESCAPE to quit.")
+    dynso.play(args[1:])
     print("opencv is magic!")
     dynso.capture()
 
