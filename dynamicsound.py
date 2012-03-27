@@ -11,6 +11,8 @@ http://pierriko.com/dynamicsound/
 TIPS: encode from MP3 to OGG
 
     ffmpeg -i src.mp3 -vn -acodec libvorbis -ab 192k dst.ogg 
+
+TODO: playlist
 """
 
 import sys
@@ -60,7 +62,7 @@ class DynamicSound(object):
             self._sound[i] = pygame.mixer.Sound(sounds[i])
         print("debug: 4 sounds loaded")
         for i in xrange(4):
-            self._channel[i] = self._sound[i].play()
+            self._channel[i] = self._sound[i].play(loops=-1)
             self._channel[i].set_volume(0.1)
         print("debug: 4 sounds playing")
 
